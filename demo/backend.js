@@ -1,12 +1,13 @@
-// Backend mode demo (GitHub Pages): menjalankan src/api.js yang sama dengan server,
+// Backend mode demo (GitHub Pages): menjalankan REST API yang sama dengan server (src/api)
 // di dalam browser, memakai SQLite WebAssembly (sql.js). Data disimpan di localStorage
 // browser masing-masing pengunjung.
-import { registerApi } from './lib/api.js';
-import { initDatabase } from './lib/schema.js';
+import { registerApi } from './lib/api/index.js';
+import { initDatabase } from './lib/api/schema.js';
 
-const STORAGE_KEY = 'si-kdo-demo-db-v1';
+const STORAGE_KEY = 'si-kdo-demo-db-v2';
+try { localStorage.removeItem('si-kdo-demo-db-v1'); } catch { /* data demo skema lama */ }
 
-// ---------- Autentikasi demo ----------
+// Autentikasi demo
 // Hash sinkron sederhana (FNV-1a, 4 putaran bergaram). Cukup untuk demo lokal karena
 // seluruh data memang berada di browser pengguna; server produksi memakai scrypt.
 function fnv(str) {
@@ -16,13 +17,13 @@ function fnv(str) {
 }
 const digest = (pw, salt) => [0, 1, 2, 3].map((i) => fnv(`${i}:${salt}:${pw}`)).join('');
 const randomHex = (n) => Array.from(crypto.getRandomValues(new Uint8Array(n)), (b) => b.toString(16).padStart(2, '0')).join('');
-const auth = {
+const security = {
   hashPassword: (pw) => { const salt = randomHex(8); return `${salt}:${digest(pw, salt)}`; },
   verifyPassword: (pw, stored) => { const [salt, h] = stored.split(':'); return digest(pw, salt) === h; },
   newToken: () => randomHex(32),
 };
 
-// ---------- Adaptor sql.js -> API mirip node:sqlite ----------
+// Adaptor sql.js -> API mirip node:sqlite
 function wrapDatabase(sql) {
   const norm = (params) => params.map((p) => (p === undefined ? null : typeof p === 'boolean' ? Number(p) : p));
   return {
@@ -47,7 +48,7 @@ function wrapDatabase(sql) {
   };
 }
 
-// ---------- Router mini bergaya Express ----------
+// Router mini bergaya Express
 class MiniApp {
   constructor() { this.stack = []; }
   #add(method, path, fn) {
@@ -61,12 +62,13 @@ class MiniApp {
   get(p, fn) { this.#add('GET', p, fn); return this; }
   post(p, fn) { this.#add('POST', p, fn); return this; }
   put(p, fn) { this.#add('PUT', p, fn); return this; }
+  delete(p, fn) { this.#add('DELETE', p, fn); return this; }
   use(p, fn) { this.#add('USE', p, fn); return this; }
 
   handle({ method, url, headers, body }) {
     const u = new URL(url, 'http://demo');
     const req = {
-      method, path: u.pathname, params: {}, body,
+      method, path: u.pathname, originalUrl: u.pathname + u.search, params: {}, body,
       query: Object.fromEntries(u.searchParams),
       get: (h) => headers[h.toLowerCase()],
     };
@@ -98,7 +100,7 @@ class MiniApp {
   }
 }
 
-// ---------- Inisialisasi ----------
+// Inisialisasi
 function loadScript(src) {
   return new Promise((resolve, reject) => {
     const s = Object.assign(document.createElement('script'), { src, onload: resolve, onerror: reject });
@@ -114,9 +116,9 @@ async function boot() {
   try { saved = localStorage.getItem(STORAGE_KEY); } catch { /* storage tidak tersedia */ }
   const sql = saved ? new SQL.Database(Uint8Array.from(atob(saved), (c) => c.charCodeAt(0))) : new SQL.Database();
   const db = wrapDatabase(sql);
-  initDatabase(db, auth.hashPassword);
+  initDatabase(db, security.hashPassword);
   const app = new MiniApp();
-  registerApi(app, db, auth);
+  registerApi(app, db, security);
   const persist = () => {
     try {
       const bytes = sql.export();
@@ -130,7 +132,7 @@ async function boot() {
   return { app, persist };
 }
 
-/** Pengganti fetch() untuk path /api/... — mengembalikan objek Response standar. */
+/** Pengganti fetch() untuk path /api/..., mengembalikan objek Response standar. */
 export async function demoFetch(url, { method = 'GET', headers = {}, body } = {}) {
   ready ??= boot();
   const { app, persist } = await ready;

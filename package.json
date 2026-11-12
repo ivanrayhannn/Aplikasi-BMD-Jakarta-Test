@@ -3,18 +3,23 @@
   "version": "1.0.0",
   "description": "Aplikasi pengelolaan Kendaraan Dinas Operasional (KDO) Perangkat Daerah - Barang Milik Daerah",
   "type": "module",
-  "main": "src/server.js",
+  "main": "src/server/index.js",
   "engines": {
     "node": ">=22.5"
   },
   "scripts": {
-    "start": "node --no-warnings src/server.js",
+    "start": "node --no-warnings src/server/index.js",
     "test": "node --no-warnings --test test/*.test.js",
     "build:pages": "node scripts/build-pages.mjs",
-    "preview:pages": "npx --yes http-server@14.1.1 dist -p 4173 -c-1"
+    "preview:pages": "npx --yes http-server@14.1.1 dist -p 4173 -c-1",
+    "dev": "node --no-warnings --watch src/server/index.js",
+    "test:e2e": "node test/e2e/click-through.cjs"
   },
   "dependencies": {
+    "exceljs": "4.4.0",
     "express": "5.1.0",
+    "jspdf": "4.2.1",
+    "jspdf-autotable": "5.0.8",
     "vue": "3.5.13"
   },
   "devDependencies": {
