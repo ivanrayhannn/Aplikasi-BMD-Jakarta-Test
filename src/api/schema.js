@@ -219,6 +219,12 @@ function seedSample(db, hashPassword) {
     pakai.run(id, pemegang.id, pemegang.nama_pegawai, pemegang.nip);
   }
 
+  // Dua catatan perawatan uji (diminta pemilik produk); kondisi setelah servis sama dengan kondisi di data sumber.
+  const rawat = db.prepare(`INSERT INTO kdo_perawatan (kdo_id, tanggal_servis, jenis_perawatan, deskripsi, bengkel, biaya, kondisi_setelah, jadwal_berikutnya)
+    SELECT id, date('now','localtime',?), ?, ?, ?, ?, ?, date('now','localtime',?) FROM kdo WHERE nomor_polisi = ?`);
+  rawat.run('-45 days', 'rutin', 'Servis berkala 40.000 km, ganti oli dan filter', 'Bengkel resmi Toyota', 1_350_000, 'baik', '+135 days', 'B 1426 PQA');
+  rawat.run('-20 days', 'perbaikan', 'Penggantian kampas rem dan rotor depan', 'Bengkel resmi Toyota', 2_150_000, 'rusak_ringan', '+70 days', 'B 1482 PQM');
+
   const putri = pnsByNip.get('199404302019032008');
   db.prepare('INSERT INTO users (nama, email, password_hash, role, pns_id) VALUES (?,?,?,?,?)')
     .run(putri.nama_pegawai, 'petugas@kdo.test', hashPassword('petugas12345'), 'petugas', putri.id);
