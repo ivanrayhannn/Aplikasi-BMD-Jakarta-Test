@@ -2,7 +2,7 @@
 // test/db-design.test.js mencocokkan metadata ini dengan skema SQLite yang benar-benar dibuat aplikasi,
 // sehingga halaman rancangan tidak bisa berbeda diam-diam dari implementasi.
 import {
-  KONDISI, JENIS_KENDARAAN, BAHAN_BAKAR, GOLONGAN, JENIS_KELAMIN,
+  KONDISI, JENIS_KENDARAAN, PERUNTUKAN, BAHAN_BAKAR, GOLONGAN, JENIS_KELAMIN,
   STATUS_KEPEGAWAIAN, JENIS_PERAWATAN, STATUS_PEMAKAIAN, PERAN, values,
 } from './enums.js';
 
@@ -63,6 +63,7 @@ export const TABLES = [
       col('warna', 'VARCHAR(30)', 'TEXT', true, 'Warna'),
       col('kondisi', enumOf(KONDISI), 'TEXT', false, 'Kondisi terkini; diperbarui otomatis dari perawatan terbaru'),
       col('jenis_kendaraan', enumOf(JENIS_KENDARAAN), 'TEXT', false, 'Jenis kendaraan'),
+      col('peruntukan', enumOf(PERUNTUKAN), 'TEXT', true, 'Untuk apa kendaraan dipakai, mis. Jabatan, Operasional, Patroli'),
       col('nomor_rangka', 'VARCHAR(30)', 'TEXT', false, 'Unik', 'UK'),
       col('nomor_mesin', 'VARCHAR(30)', 'TEXT', true, 'Unik bila diisi (data sumber belum memuat nomor mesin)', 'UK'),
       col('isi_silinder_cc', 'INT UNSIGNED', 'INTEGER', true, 'Kapasitas mesin (cc)'),

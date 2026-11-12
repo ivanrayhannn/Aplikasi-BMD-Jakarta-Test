@@ -2,13 +2,13 @@
 // Ditulis untuk SQLite agar berjalan sama di server (node:sqlite) dan di mode demo browser (sql.js).
 // Padanan MySQL 8.4 untuk produksi: db/mysql/kdo_master_tables.sql. Jaga keduanya tetap selaras.
 import {
-  KONDISI, JENIS_KENDARAAN, BAHAN_BAKAR, GOLONGAN, JENIS_KELAMIN,
+  KONDISI, JENIS_KENDARAAN, PERUNTUKAN, BAHAN_BAKAR, GOLONGAN, JENIS_KELAMIN,
   STATUS_KEPEGAWAIAN, JENIS_PERAWATAN, STATUS_PEMAKAIAN, PERAN, values,
 } from '../shared/enums.js';
 import { transaction } from './db.js';
 import { SKPD, PEGAWAI, KENDARAAN } from './seed-data.js';
 
-export const SCHEMA_VERSION = 3;
+export const SCHEMA_VERSION = 4;
 
 /** ENUM MySQL ditiru dengan CHECK constraint yang dibangkitkan dari shared/enums.js. */
 const check = (column, opts, nullable = false) =>
@@ -54,6 +54,7 @@ CREATE TABLE IF NOT EXISTS kdo (
   warna               TEXT,
   kondisi             TEXT NOT NULL DEFAULT 'baik' ${check('kondisi', KONDISI)},
   jenis_kendaraan     TEXT NOT NULL ${check('jenis_kendaraan', JENIS_KENDARAAN)},
+  peruntukan          TEXT ${check('peruntukan', PERUNTUKAN, true)},
   nomor_rangka        TEXT NOT NULL UNIQUE COLLATE NOCASE,
   nomor_mesin         TEXT UNIQUE COLLATE NOCASE,
   isi_silinder_cc     INTEGER CHECK (isi_silinder_cc IS NULL OR isi_silinder_cc >= 0),
@@ -206,14 +207,14 @@ function seedSample(db, hashPassword) {
     pnsByNip.set(p.nip, { id, ...p });
   }
 
-  const kdo = db.prepare(`INSERT INTO kdo (kode_barang_aset, nomor_polisi, merek, tipe, jenis_kendaraan, tahun_produksi, nomor_rangka,
-    kondisi, nilai_perolehan, keterangan, perangkat_daerah_id, pemegang_pns_id) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`);
+  const kdo = db.prepare(`INSERT INTO kdo (kode_barang_aset, nomor_polisi, merek, tipe, jenis_kendaraan, peruntukan, tahun_produksi,
+    nomor_rangka, kondisi, nilai_perolehan, keterangan, perangkat_daerah_id, pemegang_pns_id) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`);
   // Sumber tidak memuat tanggal penugasan, jadi pemakaian aktif dicatat sejak data dimuat.
   const pakai = db.prepare(`INSERT INTO kdo_pemakaian (kdo_id, pns_id, pns_nama, pns_nip, tanggal_mulai, status, keterangan)
     VALUES (?,?,?,?,date('now','localtime'),'aktif','Penetapan pemegang dari data awal')`);
   for (const k of KENDARAAN) {
     const pemegang = pnsByNip.get(k.pemegang_nip);
-    const id = kdo.run(k.kode_barang_aset, k.nomor_polisi, k.merek, k.tipe, k.jenis_kendaraan, k.tahun_produksi, k.nomor_rangka,
+    const id = kdo.run(k.kode_barang_aset, k.nomor_polisi, k.merek, k.tipe, k.jenis_kendaraan, k.peruntukan, k.tahun_produksi, k.nomor_rangka,
       k.kondisi, k.nilai_perolehan, k.keterangan, pdBySingkatan.get(k.skpd), pemegang.id).lastInsertRowid;
     pakai.run(id, pemegang.id, pemegang.nama_pegawai, pemegang.nip);
   }

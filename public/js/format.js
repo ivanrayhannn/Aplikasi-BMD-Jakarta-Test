@@ -49,8 +49,8 @@ export const STATUS_JADWAL_LABEL = { terlambat: 'Terlambat', segera: 'Segera ser
 export function jatuhTempo(date) {
   if (!date) return { tone: 'muted', text: '-' };
   const days = Math.round((Date.parse(date) - Date.parse(today())) / 864e5);
-  if (days < 0) return { tone: 'bad', text: `${tanggal(date)} · lewat ${-days} hari` };
-  if (days <= 30) return { tone: 'warn', text: `${tanggal(date)} · ${days} hari lagi` };
+  if (days < 0) return { tone: 'bad', text: `${tanggal(date)}, lewat ${-days} hari` };
+  if (days <= 30) return { tone: 'warn', text: `${tanggal(date)}, ${days} hari lagi` };
   return { tone: 'ok', text: tanggal(date) };
 }
 

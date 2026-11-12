@@ -62,7 +62,7 @@ export const PerangkatDaerahDetail = {
     <div v-if="error" class="alert error">{{ error }}</div>
     <LoadingState v-if="!pd && !error" />
     <template v-if="pd">
-      <PageHeader :title="pd.nama_dinas" :subtitle="pd.kode + (pd.singkatan ? ' · ' + pd.singkatan : '')" back="#/perangkat-daerah" back-label="Perangkat Daerah">
+      <PageHeader :title="pd.nama_dinas" :subtitle="pd.kode + (pd.singkatan ? ' (' + pd.singkatan + ')' : '')" back="#/perangkat-daerah" back-label="Perangkat Daerah">
         <template #badges> <Badge :tone="pd.is_aktif ? 'ok' : 'muted'">{{ pd.is_aktif ? 'Aktif' : 'Nonaktif' }}</Badge></template>
         <template v-if="isAdmin">
           <button class="danger" @click="confirming = true">Hapus</button>
@@ -77,14 +77,14 @@ export const PerangkatDaerahDetail = {
       <div class="grid two">
         <div class="card"><h2>PNS ({{ pd.pns.length }})</h2>
           <div class="table-wrap"><table><tbody>
-            <tr v-for="p in pd.pns" :key="p.id"><td><a :href="'#/pns/' + p.id">{{ p.nama_pegawai }}</a><span class="sub">{{ p.nip }} · {{ p.jabatan }}</span></td>
+            <tr v-for="p in pd.pns" :key="p.id"><td><a :href="'#/pns/' + p.id">{{ p.nama_pegawai }}</a><span class="sub">{{ p.jabatan }}</span><span class="sub code">{{ p.nip }}</span></td>
               <td><Badge :tone="tone('status_kepegawaian', p.status_kepegawaian)">{{ label('status_kepegawaian', p.status_kepegawaian) }}</Badge></td></tr>
           </tbody></table></div>
           <EmptyState v-if="!pd.pns.length" title="Belum ada PNS di unit ini" />
         </div>
         <div class="card"><h2>Kendaraan ({{ pd.kdo.length }})</h2>
           <div class="table-wrap"><table><tbody>
-            <tr v-for="k in pd.kdo" :key="k.id" :class="{ inactive: !k.is_aktif }"><td><a :href="'#/kdo/' + k.id">{{ k.nomor_polisi }}</a><span class="sub">{{ k.merek }} {{ k.tipe }}</span></td>
+            <tr v-for="k in pd.kdo" :key="k.id" :class="{ inactive: !k.is_aktif }"><td><a :href="'#/kdo/' + k.id"><Plate :nopol="k.nomor_polisi" /></a><span class="sub">{{ k.merek }} {{ k.tipe }}</span></td>
               <td>{{ k.pemegang_nama || 'Belum ada pemegang' }}</td>
               <td><Badge :tone="tone('kondisi', k.kondisi)">{{ label('kondisi', k.kondisi) }}</Badge></td></tr>
           </tbody></table></div>

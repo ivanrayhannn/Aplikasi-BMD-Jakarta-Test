@@ -16,6 +16,8 @@
     "test:e2e": "node test/e2e/click-through.cjs"
   },
   "dependencies": {
+    "@fontsource/atkinson-hyperlegible-mono": "5.2.6",
+    "@fontsource/atkinson-hyperlegible-next": "5.2.6",
     "exceljs": "4.4.0",
     "express": "5.1.0",
     "jspdf": "4.2.1",

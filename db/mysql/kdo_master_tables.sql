@@ -58,7 +58,9 @@ CREATE TABLE kdo (
   tahun_produksi      SMALLINT UNSIGNED NOT NULL,
   warna               VARCHAR(30)  NULL,
   kondisi             ENUM('baik','rusak_ringan','rusak_berat') NOT NULL DEFAULT 'baik',
-  jenis_kendaraan     ENUM('roda_2','roda_4','roda_6','bus','truk','lainnya') NOT NULL,
+  jenis_kendaraan     ENUM('roda_2','roda_4','roda_6','bus','truk','ambulans','mobil_pemadam','lainnya') NOT NULL,
+  peruntukan          ENUM('jabatan','operasional','patroli','kedaruratan','lapangan','layanan_keliling',
+                           'angkut_pegawai','angkut_barang','angkut_logistik','angkut_tanaman','lainnya') NULL,
   nomor_rangka        VARCHAR(30)  NOT NULL,
   nomor_mesin         VARCHAR(30)  NULL,  -- unik bila diisi; data sumber belum memuat nomor mesin
   isi_silinder_cc     INT UNSIGNED NULL,

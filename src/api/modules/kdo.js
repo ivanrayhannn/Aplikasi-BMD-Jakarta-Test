@@ -30,6 +30,7 @@ export function kdoWhere(query) {
     .like(['k.nomor_polisi', 'k.merek', 'k.tipe', 'p.nama_pegawai'], query.q)
     .eq('k.kondisi', query.kondisi)
     .eq('k.jenis_kendaraan', query.jenis_kendaraan)
+    .eq('k.peruntukan', query.peruntukan)
     .eq('k.perangkat_daerah_id', query.perangkat_daerah_id)
     .eq('k.is_aktif', boolParam(query.is_aktif));
   if (query.tanpa_pemegang === '1') where.raw('k.pemegang_pns_id IS NULL');

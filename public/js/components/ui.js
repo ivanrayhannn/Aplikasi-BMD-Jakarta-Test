@@ -21,12 +21,18 @@ export const EmptyState = {
   template: `<div class="empty"><b>{{ title }}</b><p v-if="hint">{{ hint }}</p><slot /></div>`,
 };
 
+/** Nomor polisi tampil sebagai plat merah kendaraan dinas. */
+export const Plate = {
+  props: { nopol: String, large: Boolean },
+  template: `<span class="plate" :class="{ lg: large }">{{ nopol }}</span>`,
+};
+
 export const PageHeader = {
   props: { title: String, subtitle: String, back: String, backLabel: String },
   template: `<div class="page-head">
     <div>
       <a v-if="back" :href="back" class="back">← {{ backLabel || 'Kembali' }}</a>
-      <h1>{{ title }}<slot name="badges" /></h1>
+      <h1><slot name="title">{{ title }}</slot><slot name="badges" /></h1>
       <p v-if="subtitle">{{ subtitle }}</p>
     </div>
     <div class="actions"><slot /></div>

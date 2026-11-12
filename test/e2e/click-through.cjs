@@ -50,11 +50,11 @@ const toast = (page, text) => page.waitForSelector(`.toast:has-text("${text}")`,
   ok('Login admin -> Dashboard, nama & peran tampil di sidebar');
 
   // Dashboard
-  await page.click('a.stat.hero');
+  await page.click('a.fleet-total');
   await page.waitForSelector('h1:has-text("Kendaraan Dinas")');
   ok('Kartu Total Kendaraan -> daftar kendaraan');
   await page.goto(BASE + '#/dashboard');
-  await page.click('a.stat.bad');
+  await page.click('a.cond.bad');
   await page.waitForFunction(() => document.querySelectorAll('tbody tr').length === 2 && document.querySelector('tbody').textContent.includes('B 3920 PQJ'));
   ok('Kartu Rusak Berat -> daftar tersaring kondisi rusak berat (2 kendaraan)');
 

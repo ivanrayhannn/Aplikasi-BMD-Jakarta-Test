@@ -33,14 +33,14 @@ export const TautkanDialog = {
     <div v-if="state.message" class="alert error" role="alert">{{ state.message }}</div>
     <form class="form" @submit.prevent="save" novalidate>
       <Field label="Kendaraan" name="kdo_id" :error="errors.kdo_id" required full>
-        <input v-if="kdo" id="kdo_id" :value="kdo.nomor_polisi + ' · ' + kdo.merek + ' ' + (kdo.tipe || '')" disabled>
+        <input v-if="kdo" id="kdo_id" :value="kdo.nomor_polisi + ', ' + kdo.merek + ' ' + (kdo.tipe || '')" disabled>
         <select v-else id="kdo_id" v-model.number="values.kdo_id"><option :value="null">Pilih kendaraan tanpa pemakai</option>
-          <option v-for="k in kdoOptions" :key="k.id" :value="k.id">{{ k.nomor_polisi }} · {{ k.merek }} {{ k.tipe }}</option></select>
+          <option v-for="k in kdoOptions" :key="k.id" :value="k.id">{{ k.nomor_polisi }}, {{ k.merek }} {{ k.tipe }}</option></select>
       </Field>
       <Field label="Pegawai pemakai" name="pns_id" :error="errors.pns_id" required full hint="Hanya PNS berstatus aktif">
         <input v-if="pns" id="pns_id" :value="pns.nama_pegawai" disabled>
         <select v-else id="pns_id" v-model.number="values.pns_id"><option :value="null">Pilih pegawai</option>
-          <option v-for="p in pnsOptions" :key="p.id" :value="p.id">{{ p.nama_pegawai }} · {{ p.jabatan }} ({{ p.perangkat_daerah_singkatan || p.perangkat_daerah }})</option></select>
+          <option v-for="p in pnsOptions" :key="p.id" :value="p.id">{{ p.nama_pegawai }}, {{ p.jabatan }} ({{ p.perangkat_daerah_singkatan || p.perangkat_daerah }})</option></select>
       </Field>
       <Field label="Tanggal mulai" name="tanggal_mulai" :error="errors.tanggal_mulai" required><input id="tanggal_mulai" type="date" v-model="values.tanggal_mulai" :max="today()"></Field>
       <Field label="Keperluan / keterangan" name="keterangan" :error="errors.keterangan" full><textarea id="keterangan" v-model="values.keterangan" rows="2"></textarea></Field>
@@ -101,9 +101,9 @@ export const PerawatanDialog = {
     <div v-if="state.message" class="alert error" role="alert">{{ state.message }}</div>
     <form class="form" @submit.prevent="save" novalidate>
       <Field label="Kendaraan" name="kdo_id" :error="errors.kdo_id" required full>
-        <input v-if="kdo" id="kdo_id" :value="kdo.nomor_polisi + ' · ' + kdo.merek + ' ' + (kdo.tipe || '')" disabled>
+        <input v-if="kdo" id="kdo_id" :value="kdo.nomor_polisi + ', ' + kdo.merek + ' ' + (kdo.tipe || '')" disabled>
         <select v-else id="kdo_id" v-model.number="values.kdo_id"><option :value="null">Pilih kendaraan</option>
-          <option v-for="k in kdoOptions" :key="k.id" :value="k.id">{{ k.nomor_polisi }} · {{ k.merek }} {{ k.tipe }}</option></select>
+          <option v-for="k in kdoOptions" :key="k.id" :value="k.id">{{ k.nomor_polisi }}, {{ k.merek }} {{ k.tipe }}</option></select>
       </Field>
       <Field label="Tanggal servis" name="tanggal_servis" :error="errors.tanggal_servis" required><input id="tanggal_servis" type="date" v-model="values.tanggal_servis" :max="today()"></Field>
       <Field label="Jenis perawatan" name="jenis_perawatan" :error="errors.jenis_perawatan" required><EnumSelect id="jenis_perawatan" v-model="values.jenis_perawatan" group="jenis_perawatan" /></Field>

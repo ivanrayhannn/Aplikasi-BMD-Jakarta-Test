@@ -43,6 +43,7 @@ export function register(app, { db }) {
 
     send(res, {
       total_aset: total,
+      nilai_perolehan_total: db.prepare('SELECT COALESCE(SUM(nilai_perolehan), 0) AS v FROM kdo WHERE is_aktif = 1').get().v,
       total_nonaktif: db.prepare('SELECT COUNT(*) AS n FROM kdo WHERE is_aktif = 0').get().n,
       kondisi: perKondisi,
       sedang_dipakai: sedangDipakai,

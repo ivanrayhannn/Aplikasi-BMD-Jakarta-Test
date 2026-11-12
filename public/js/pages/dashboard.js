@@ -1,8 +1,17 @@
-// Fitur 01: Dashboard Kendaraan (+ pengingat dari fitur 07).
-import { ref, onMounted } from '../../vendor/vue.js';
+// Fitur 01 (Dashboard Kendaraan) + pengingat fitur 07.
+// Disusun di sekitar satu keputusan: kendaraan mana yang perlu perhatian sekarang.
+import { ref, computed, onMounted } from '../../vendor/vue.js';
 import { api } from '../api.js';
 import { label, tone, tanggal, waktu, angka, kendaraan, jatuhTempo, STATUS_JADWAL_LABEL } from '../format.js';
 import { Badge, EmptyState, PageHeader } from '../components/ui.js';
+
+/** Rp11,2 miliar: nilai besar dibaca lebih cepat dalam satuan juta/miliar. */
+function ringkasRupiah(n) {
+  if (n >= 1e12) return `Rp${(n / 1e12).toLocaleString('id-ID', { maximumFractionDigits: 1 })} triliun`;
+  if (n >= 1e9) return `Rp${(n / 1e9).toLocaleString('id-ID', { maximumFractionDigits: 1 })} miliar`;
+  if (n >= 1e6) return `Rp${(n / 1e6).toLocaleString('id-ID', { maximumFractionDigits: 1 })} juta`;
+  return `Rp${Math.round(n).toLocaleString('id-ID')}`;
+}
 
 export const Dashboard = {
   components: { Badge, EmptyState, PageHeader },
@@ -13,75 +22,81 @@ export const Dashboard = {
     onMounted(async () => {
       try { ({ data: d.value, meta: meta.value } = await api.get('/dashboard')); } catch (e) { error.value = e.message; }
     });
-    const pct = (n) => (d.value?.total_aset ? (n / d.value.total_aset) * 100 : 0);
-    return { d, meta, error, pct, label, tone, tanggal, waktu, angka, kendaraan, jatuhTempo, STATUS_JADWAL_LABEL };
+    const kondisi = computed(() => (d.value ? [
+      { key: 'baik', text: 'Baik', n: d.value.kondisi.baik },
+      { key: 'rusak_ringan', text: 'Perlu servis / rusak ringan', n: d.value.kondisi.rusak_ringan },
+      { key: 'rusak_berat', text: 'Rusak berat', n: d.value.kondisi.rusak_berat },
+    ] : []));
+    const perhatian = computed(() => (d.value
+      ? d.value.pengingat.servis.length + d.value.pengingat.dokumen.length + d.value.pengingat.pembaruan_data.length : 0));
+    return { d, meta, error, kondisi, perhatian, ringkasRupiah, label, tone, tanggal, waktu, angka, kendaraan, jatuhTempo, STATUS_JADWAL_LABEL };
   },
   template: `<div>
-    <PageHeader title="Dashboard Kendaraan" subtitle="Ringkasan aset kendaraan dinas operasional" />
+    <PageHeader title="Dashboard Kendaraan" subtitle="Kondisi dan pemakaian kendaraan dinas operasional" />
     <div v-if="error" class="alert error">{{ error }}</div>
     <LoadingState v-if="!d && !error" />
     <template v-if="d">
-      <div class="grid stats">
-        <a class="stat hero" href="#/kdo"><div class="label">Total Kendaraan Dinas</div><div class="value">{{ angka(d.total_aset) }}</div>
-          <div class="sub" v-if="d.total_nonaktif">+ {{ d.total_nonaktif }} nonaktif</div></a>
-        <a class="stat" href="#/pemakaian?status=aktif"><div class="label">Sedang Dipakai</div><div class="value">{{ angka(d.sedang_dipakai.length) }}</div></a>
-        <a class="stat ok" href="#/kdo?kondisi=baik"><div class="label">Kondisi Baik</div><div class="value">{{ angka(d.kondisi.baik) }}</div></a>
-        <a class="stat warn" href="#/kdo?kondisi=rusak_ringan"><div class="label">Perlu Servis / Rusak Ringan</div><div class="value">{{ angka(d.kondisi.rusak_ringan) }}</div></a>
-        <a class="stat bad" href="#/kdo?kondisi=rusak_berat"><div class="label">Rusak Berat</div><div class="value">{{ angka(d.kondisi.rusak_berat) }}</div></a>
-      </div>
-      <div class="card" v-if="d.total_aset">
-        <div class="bar" role="img" :aria-label="'Baik ' + d.kondisi.baik + ', rusak ringan ' + d.kondisi.rusak_ringan + ', rusak berat ' + d.kondisi.rusak_berat">
-          <span class="ok" :style="{ width: pct(d.kondisi.baik) + '%' }"></span>
-          <span class="warn" :style="{ width: pct(d.kondisi.rusak_ringan) + '%' }"></span>
-          <span class="bad" :style="{ width: pct(d.kondisi.rusak_berat) + '%' }"></span>
+      <section class="fleet card" aria-label="Ringkasan armada">
+        <a class="fleet-total" href="#/kdo">
+          <span class="fleet-number">{{ angka(d.total_aset) }}</span>
+          <span class="fleet-caption">Total Kendaraan Dinas<span class="sub">nilai perolehan {{ ringkasRupiah(d.nilai_perolehan_total) }}<template v-if="d.total_nonaktif">, {{ d.total_nonaktif }} nonaktif tidak dihitung</template></span></span>
+        </a>
+        <div class="fleet-condition">
+          <div class="bar" role="img" :aria-label="kondisi.map(k => k.text + ' ' + k.n).join(', ')">
+            <span v-for="k in kondisi" :key="k.key" :class="tone('kondisi', k.key)" :style="{ flexGrow: k.n }"></span>
+          </div>
+          <div class="condition-links">
+            <a v-for="k in kondisi" :key="k.key" :href="'#/kdo?kondisi=' + k.key" :class="'cond ' + tone('kondisi', k.key)">
+              <b>{{ k.n }}</b><span>{{ k.text }}</span></a>
+            <a class="cond" href="#/pemakaian?status=aktif"><b>{{ d.sedang_dipakai.length }}</b><span>Sedang dipakai</span></a>
+          </div>
         </div>
-        <div class="legend"><span class="ok">Baik {{ d.kondisi.baik }}</span><span class="warn">Rusak ringan {{ d.kondisi.rusak_ringan }}</span><span class="bad">Rusak berat {{ d.kondisi.rusak_berat }}</span></div>
-      </div>
+      </section>
 
-      <div class="grid two">
-        <div class="card"><div class="card-head"><h2>Kendaraan Sedang Dipakai</h2><a href="#/pemakaian?status=aktif">Lihat semua</a></div>
-          <div class="table-wrap"><table class="stack">
-            <thead><tr><th>No. Polisi</th><th>Kendaraan</th><th>Pemakai</th><th>Sejak</th></tr></thead>
-            <tbody><tr v-for="r in d.sedang_dipakai.slice(0, 8)" :key="r.pemakaian_id">
-              <td data-label="No. Polisi"><a :href="'#/kdo/' + r.kdo_id"><b>{{ r.nomor_polisi }}</b></a></td><td data-label="Kendaraan">{{ kendaraan(r) }}<span class="sub">{{ r.perangkat_daerah_singkatan }}</span></td>
-              <td data-label="Pemakai">{{ r.pns_nama }}</td><td data-label="Sejak">{{ tanggal(r.tanggal_mulai) }}</td></tr></tbody>
-          </table></div>
-          <EmptyState v-if="!d.sedang_dipakai.length" title="Tidak ada kendaraan sedang dipakai" />
-        </div>
-        <div class="card"><div class="card-head"><h2>Aset Terbaru</h2><a href="#/kdo">Lihat semua</a></div>
-          <div class="table-wrap"><table class="stack">
-            <thead><tr><th>No. Polisi</th><th>Kendaraan</th><th>Ditambahkan</th></tr></thead>
-            <tbody><tr v-for="k in d.aset_terbaru" :key="k.id">
-              <td data-label="No. Polisi"><a :href="'#/kdo/' + k.id"><b>{{ k.nomor_polisi }}</b></a></td><td data-label="Kendaraan">{{ kendaraan(k) }}<span class="sub">{{ k.perangkat_daerah_singkatan }}</span></td>
-              <td data-label="Ditambahkan">{{ waktu(k.created_at) }}</td></tr></tbody>
-          </table></div>
+      <div class="dash-grid">
+        <section class="card attention" aria-labelledby="perhatian-judul">
+          <div class="card-head"><h2 id="perhatian-judul">Perlu perhatian</h2><span class="sub">{{ perhatian }} butir</span></div>
+          <EmptyState v-if="!perhatian" title="Tidak ada yang perlu ditindaklanjuti" hint="Servis, STNK, pajak, dan pembaruan data kendaraan masih dalam batas." />
+          <template v-if="d.pengingat.servis.length">
+            <h3>Jadwal servis <span class="sub-inline">terlewat atau dalam {{ meta.pengingat_servis_hari }} hari</span></h3>
+            <ul class="reminders"><li v-for="s in d.pengingat.servis" :key="'s' + s.kdo_id">
+              <a :href="'#/kdo/' + s.kdo_id"><Plate :nopol="s.nomor_polisi" /></a>
+              <span>{{ kendaraan(s) }}</span>
+              <Badge :tone="tone('status_jadwal', s.status_jadwal)">{{ STATUS_JADWAL_LABEL[s.status_jadwal] }}, {{ tanggal(s.jadwal_berikutnya) }}</Badge></li></ul>
+          </template>
+          <template v-if="d.pengingat.dokumen.length">
+            <h3>STNK dan pajak <span class="sub-inline">habis atau dalam 30 hari</span></h3>
+            <ul class="reminders"><li v-for="k in d.pengingat.dokumen" :key="'d' + k.id">
+              <a :href="'#/kdo/' + k.id"><Plate :nopol="k.nomor_polisi" /></a>
+              <span>STNK <Badge :tone="jatuhTempo(k.masa_berlaku_stnk).tone">{{ jatuhTempo(k.masa_berlaku_stnk).text }}</Badge></span>
+              <span>Pajak <Badge :tone="jatuhTempo(k.tanggal_pajak).tone">{{ jatuhTempo(k.tanggal_pajak).text }}</Badge></span></li></ul>
+          </template>
+          <template v-if="d.pengingat.pembaruan_data.length">
+            <h3>Data lama <span class="sub-inline">tidak diperbarui lebih dari {{ meta.pengingat_pembaruan_hari }} hari</span></h3>
+            <ul class="reminders"><li v-for="k in d.pengingat.pembaruan_data" :key="'p' + k.id">
+              <a :href="'#/kdo/' + k.id"><Plate :nopol="k.nomor_polisi" /></a><span>terakhir {{ waktu(k.updated_at) }}</span></li></ul>
+          </template>
+        </section>
+
+        <section class="card" aria-labelledby="dipakai-judul">
+          <div class="card-head"><h2 id="dipakai-judul">Sedang dipakai</h2><a href="#/pemakaian?status=aktif">Semua pemakaian</a></div>
+          <ul class="vehicle-list"><li v-for="r in d.sedang_dipakai.slice(0, 8)" :key="r.pemakaian_id">
+            <a :href="'#/kdo/' + r.kdo_id"><Plate :nopol="r.nomor_polisi" /></a>
+            <span><b>{{ r.pns_nama }}</b><span class="sub">{{ kendaraan(r) }}, {{ r.perangkat_daerah_singkatan }}</span></span>
+          </li></ul>
+          <p v-if="d.sedang_dipakai.length > 8" class="hint">dan {{ d.sedang_dipakai.length - 8 }} kendaraan lain</p>
+          <EmptyState v-if="!d.sedang_dipakai.length" title="Tidak ada kendaraan sedang dipakai" hint="Tautkan pemakai di menu Pemakai Kendaraan." />
+        </section>
+
+        <section class="card" aria-labelledby="terbaru-judul">
+          <div class="card-head"><h2 id="terbaru-judul">Aset terbaru</h2><a href="#/kdo">Semua kendaraan</a></div>
+          <ul class="vehicle-list"><li v-for="k in d.aset_terbaru" :key="k.id">
+            <a :href="'#/kdo/' + k.id"><Plate :nopol="k.nomor_polisi" /></a>
+            <span>{{ kendaraan(k) }}<span class="sub">{{ k.perangkat_daerah_singkatan }}, ditambahkan {{ waktu(k.created_at) }}</span></span>
+            <Badge :tone="tone('kondisi', k.kondisi)">{{ label('kondisi', k.kondisi) }}</Badge>
+          </li></ul>
           <EmptyState v-if="!d.aset_terbaru.length" title="Belum ada data kendaraan" hint="Tambahkan kendaraan pertama di menu Kendaraan Dinas." />
-        </div>
-      </div>
-
-      <h2 class="section-title">Pengingat</h2>
-      <div class="grid three">
-        <div class="card"><div class="card-head"><h2>Servis ({{ d.pengingat.servis.length }})</h2><a href="#/perawatan">Jadwal</a></div>
-          <p class="hint">Jadwal terlewat atau ≤ {{ meta.pengingat_servis_hari }} hari lagi</p>
-          <ul class="reminders"><li v-for="s in d.pengingat.servis" :key="s.kdo_id">
-            <a :href="'#/kdo/' + s.kdo_id">{{ s.nomor_polisi }}</a> <Badge :tone="tone('status_jadwal', s.status_jadwal)">{{ STATUS_JADWAL_LABEL[s.status_jadwal] }}</Badge>
-            <span class="sub">{{ tanggal(s.jadwal_berikutnya) }}</span></li></ul>
-          <EmptyState v-if="!d.pengingat.servis.length" title="Tidak ada servis yang mendesak" />
-        </div>
-        <div class="card"><h2>STNK / Pajak ({{ d.pengingat.dokumen.length }})</h2>
-          <p class="hint">Habis atau ≤ 30 hari lagi</p>
-          <ul class="reminders"><li v-for="k in d.pengingat.dokumen" :key="k.id">
-            <a :href="'#/kdo/' + k.id">{{ k.nomor_polisi }}</a>
-            <span class="sub">STNK: <Badge :tone="jatuhTempo(k.masa_berlaku_stnk).tone">{{ jatuhTempo(k.masa_berlaku_stnk).text }}</Badge></span>
-            <span class="sub">Pajak: <Badge :tone="jatuhTempo(k.tanggal_pajak).tone">{{ jatuhTempo(k.tanggal_pajak).text }}</Badge></span></li></ul>
-          <EmptyState v-if="!d.pengingat.dokumen.length" title="Semua dokumen masih berlaku" />
-        </div>
-        <div class="card"><h2>Pembaruan Data ({{ d.pengingat.pembaruan_data.length }})</h2>
-          <p class="hint">Tidak diperbarui &gt; {{ meta.pengingat_pembaruan_hari }} hari</p>
-          <ul class="reminders"><li v-for="k in d.pengingat.pembaruan_data" :key="k.id">
-            <a :href="'#/kdo/' + k.id">{{ k.nomor_polisi }}</a><span class="sub">terakhir {{ waktu(k.updated_at) }}</span></li></ul>
-          <EmptyState v-if="!d.pengingat.pembaruan_data.length" title="Data kendaraan mutakhir" />
-        </div>
+        </section>
       </div>
     </template>
   </div>`,

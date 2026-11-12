@@ -351,7 +351,7 @@ export const PEGAWAI = [
 ];
 
 /**
- * 20 kendaraan dinas. `jenis_kendaraan` dipetakan ke ENUM; peruntukan atau jenis khusus disimpan di `keterangan`.
+ * 20 kendaraan dinas. Jenis dan peruntukan dari kolom "Jenis" sumber dipisah ke dua ENUM.
  * `pemegang_nip` menjadi pemakaian aktif sejak data dimuat.
  */
 export const KENDARAAN = [
@@ -361,13 +361,14 @@ export const KENDARAAN = [
     "merek": "Toyota",
     "tipe": "Kijang Innova Zenix 2.0 G",
     "jenis_kendaraan": "roda_4",
+    "peruntukan": "operasional",
     "tahun_produksi": 2023,
     "nomor_rangka": "MHFAB8GS4P0012874",
     "skpd": "Dishub",
     "pemegang_nip": "197803142005011008",
     "kondisi": "baik",
     "nilai_perolehan": 432500000,
-    "keterangan": "Peruntukan: Operasional"
+    "keterangan": null
   },
   {
     "kode_barang_aset": "KND-DISHUB-0002",
@@ -375,27 +376,29 @@ export const KENDARAAN = [
     "merek": "Honda",
     "tipe": "Vario 125 CBS",
     "jenis_kendaraan": "roda_2",
+    "peruntukan": "patroli",
     "tahun_produksi": 2022,
     "nomor_rangka": "MH1JM8115NK207731",
     "skpd": "Dishub",
     "pemegang_nip": "197803142005011008",
     "kondisi": "baik",
     "nilai_perolehan": 23450000,
-    "keterangan": "Peruntukan: Patroli"
+    "keterangan": null
   },
   {
     "kode_barang_aset": "KND-DINKES-0001",
     "nomor_polisi": "B 1709 PQB",
     "merek": "Isuzu",
     "tipe": "Elf NLR Ambulans",
-    "jenis_kendaraan": "lainnya",
+    "jenis_kendaraan": "ambulans",
+    "peruntukan": null,
     "tahun_produksi": 2021,
     "nomor_rangka": "MHCNLR55EMJ041926",
     "skpd": "Dinkes",
     "pemegang_nip": "198107222009012003",
     "kondisi": "baik",
     "nilai_perolehan": 785000000,
-    "keterangan": "Kendaraan khusus: Ambulans"
+    "keterangan": null
   },
   {
     "kode_barang_aset": "KND-DINKES-0002",
@@ -403,13 +406,14 @@ export const KENDARAAN = [
     "merek": "Toyota",
     "tipe": "Hiace Premio",
     "jenis_kendaraan": "roda_4",
+    "peruntukan": "angkut_pegawai",
     "tahun_produksi": 2022,
     "nomor_rangka": "JTFSS22P8N0154307",
     "skpd": "Dinkes",
     "pemegang_nip": "198107222009012003",
     "kondisi": "baik",
     "nilai_perolehan": 618000000,
-    "keterangan": "Peruntukan: Angkut Pegawai"
+    "keterangan": null
   },
   {
     "kode_barang_aset": "KND-DLH-0001",
@@ -417,13 +421,14 @@ export const KENDARAAN = [
     "merek": "Mitsubishi",
     "tipe": "Fuso Canter Compactor",
     "jenis_kendaraan": "truk",
+    "peruntukan": null,
     "tahun_produksi": 2018,
     "nomor_rangka": "MHMFE74P5JK008163",
     "skpd": "DLH",
     "pemegang_nip": "198511032010011012",
     "kondisi": "rusak_ringan",
     "nilai_perolehan": 655000000,
-    "keterangan": "Kendaraan khusus: Truk Sampah"
+    "keterangan": "Truk Sampah"
   },
   {
     "kode_barang_aset": "KND-DLH-0002",
@@ -431,13 +436,14 @@ export const KENDARAAN = [
     "merek": "Isuzu",
     "tipe": "Traga Pick Up Bak",
     "jenis_kendaraan": "roda_4",
+    "peruntukan": "angkut_barang",
     "tahun_produksi": 2022,
     "nomor_rangka": "MHCTFR85CNJ110482",
     "skpd": "DLH",
     "pemegang_nip": "198511032010011012",
     "kondisi": "baik",
     "nilai_perolehan": 231000000,
-    "keterangan": "Peruntukan: Angkut Barang"
+    "keterangan": null
   },
   {
     "kode_barang_aset": "KND-DBM-0001",
@@ -445,27 +451,29 @@ export const KENDARAAN = [
     "merek": "Hino",
     "tipe": "Dutro 130 MDL Dump",
     "jenis_kendaraan": "truk",
+    "peruntukan": null,
     "tahun_produksi": 2017,
     "nomor_rangka": "MJEC1JG43H5130598",
     "skpd": "DBM",
     "pemegang_nip": "199002172015032001",
     "kondisi": "rusak_ringan",
     "nilai_perolehan": 482000000,
-    "keterangan": "Kendaraan khusus: Truk Dump"
+    "keterangan": "Truk Dump"
   },
   {
     "kode_barang_aset": "KND-GKM-0001",
     "nomor_polisi": "B 9705 PQF",
     "merek": "Hino",
     "tipe": "500 FG Pemadam 5.000 L",
-    "jenis_kendaraan": "truk",
+    "jenis_kendaraan": "mobil_pemadam",
+    "peruntukan": null,
     "tahun_produksi": 2020,
     "nomor_rangka": "MJEFG8JPKLJ024317",
     "skpd": "Gulkarmat",
     "pemegang_nip": "197612052003121004",
     "kondisi": "baik",
     "nilai_perolehan": 4215000000,
-    "keterangan": "Kendaraan khusus: Mobil Pemadam"
+    "keterangan": null
   },
   {
     "kode_barang_aset": "KND-SATPOL-0001",
@@ -473,13 +481,14 @@ export const KENDARAAN = [
     "merek": "Toyota",
     "tipe": "Hilux 2.4 E Double Cabin",
     "jenis_kendaraan": "roda_4",
+    "peruntukan": "patroli",
     "tahun_produksi": 2019,
     "nomor_rangka": "MR0KB8CD4K0952146",
     "skpd": "Satpol PP",
     "pemegang_nip": "198804262014031002",
     "kondisi": "baik",
     "nilai_perolehan": 418000000,
-    "keterangan": "Peruntukan: Patroli"
+    "keterangan": null
   },
   {
     "kode_barang_aset": "KND-BAPPEDA-0001",
@@ -487,13 +496,14 @@ export const KENDARAAN = [
     "merek": "Hyundai",
     "tipe": "Ioniq 5 Prime",
     "jenis_kendaraan": "roda_4",
+    "peruntukan": "jabatan",
     "tahun_produksi": 2023,
     "nomor_rangka": "KMHKM81CFPU183902",
     "skpd": "Bappeda",
     "pemegang_nip": "199306112019022004",
     "kondisi": "baik",
     "nilai_perolehan": 748000000,
-    "keterangan": "Peruntukan: Jabatan"
+    "keterangan": null
   },
   {
     "kode_barang_aset": "KND-DSDA-0001",
@@ -501,13 +511,14 @@ export const KENDARAAN = [
     "merek": "Suzuki",
     "tipe": "New Carry Pick Up",
     "jenis_kendaraan": "roda_4",
+    "peruntukan": "angkut_barang",
     "tahun_produksi": 2020,
     "nomor_rangka": "MHYESL415LJ402658",
     "skpd": "DSDA",
     "pemegang_nip": "198001302006041009",
     "kondisi": "baik",
     "nilai_perolehan": 158500000,
-    "keterangan": "Peruntukan: Angkut Barang"
+    "keterangan": null
   },
   {
     "kode_barang_aset": "KND-DSDA-0002",
@@ -515,13 +526,14 @@ export const KENDARAAN = [
     "merek": "Honda",
     "tipe": "CRF150L",
     "jenis_kendaraan": "roda_2",
+    "peruntukan": "lapangan",
     "tahun_produksi": 2021,
     "nomor_rangka": "MH1KD1118MK104276",
     "skpd": "DSDA",
     "pemegang_nip": "198001302006041009",
     "kondisi": "rusak_berat",
     "nilai_perolehan": 34900000,
-    "keterangan": "Peruntukan: Lapangan"
+    "keterangan": null
   },
   {
     "kode_barang_aset": "KND-BPAD-0001",
@@ -529,13 +541,14 @@ export const KENDARAAN = [
     "merek": "Toyota",
     "tipe": "Fortuner 2.4 VRZ",
     "jenis_kendaraan": "roda_4",
+    "peruntukan": "jabatan",
     "tahun_produksi": 2020,
     "nomor_rangka": "MHFGB8GS0L0817439",
     "skpd": "BPAD",
     "pemegang_nip": "198409192011012007",
     "kondisi": "baik",
     "nilai_perolehan": 552000000,
-    "keterangan": "Peruntukan: Jabatan"
+    "keterangan": null
   },
   {
     "kode_barang_aset": "KND-KOMINFO-0001",
@@ -543,13 +556,14 @@ export const KENDARAAN = [
     "merek": "Mitsubishi",
     "tipe": "Xpander Exceed",
     "jenis_kendaraan": "roda_4",
+    "peruntukan": "operasional",
     "tahun_produksi": 2021,
     "nomor_rangka": "MK2NCXTARMJ015873",
     "skpd": "Diskominfotik",
     "pemegang_nip": "199512082020121006",
     "kondisi": "baik",
     "nilai_perolehan": 268700000,
-    "keterangan": "Peruntukan: Operasional"
+    "keterangan": null
   },
   {
     "kode_barang_aset": "KND-DISDIK-0001",
@@ -557,13 +571,14 @@ export const KENDARAAN = [
     "merek": "Toyota",
     "tipe": "Avanza 1.3 E",
     "jenis_kendaraan": "roda_4",
+    "peruntukan": "operasional",
     "tahun_produksi": 2019,
     "nomor_rangka": "MHKM1BA2JKK093615",
     "skpd": "Disdik",
     "pemegang_nip": "198203102008012011",
     "kondisi": "rusak_ringan",
     "nilai_perolehan": 228900000,
-    "keterangan": "Peruntukan: Operasional"
+    "keterangan": null
   },
   {
     "kode_barang_aset": "KND-DINSOS-0001",
@@ -571,13 +586,14 @@ export const KENDARAAN = [
     "merek": "Daihatsu",
     "tipe": "Gran Max Blind Van",
     "jenis_kendaraan": "roda_4",
+    "peruntukan": "angkut_logistik",
     "tahun_produksi": 2019,
     "nomor_rangka": "MHKV1AA2JKK126840",
     "skpd": "Dinsos",
     "pemegang_nip": "197907272005011010",
     "kondisi": "baik",
     "nilai_perolehan": 169500000,
-    "keterangan": "Peruntukan: Angkut Logistik"
+    "keterangan": null
   },
   {
     "kode_barang_aset": "KND-BPBD-0001",
@@ -585,13 +601,14 @@ export const KENDARAAN = [
     "merek": "Mitsubishi",
     "tipe": "Pajero Sport Dakar 4x4",
     "jenis_kendaraan": "roda_4",
+    "peruntukan": "kedaruratan",
     "tahun_produksi": 2021,
     "nomor_rangka": "MMBGUKS10MH004527",
     "skpd": "BPBD",
     "pemegang_nip": "197505212000031003",
     "kondisi": "baik",
     "nilai_perolehan": 711000000,
-    "keterangan": "Peruntukan: Kedaruratan"
+    "keterangan": null
   },
   {
     "kode_barang_aset": "KND-DUKCAPIL-0001",
@@ -599,13 +616,14 @@ export const KENDARAAN = [
     "merek": "Wuling",
     "tipe": "Air ev Long Range",
     "jenis_kendaraan": "roda_4",
+    "peruntukan": "layanan_keliling",
     "tahun_produksi": 2023,
     "nomor_rangka": "LZWADAGA1PB302918",
     "skpd": "Dukcapil",
     "pemegang_nip": "198910042014022003",
     "kondisi": "baik",
     "nilai_perolehan": 251000000,
-    "keterangan": "Peruntukan: Layanan Keliling"
+    "keterangan": null
   },
   {
     "kode_barang_aset": "KND-TAMHUT-0001",
@@ -613,13 +631,14 @@ export const KENDARAAN = [
     "merek": "Mitsubishi",
     "tipe": "L300 Pick Up",
     "jenis_kendaraan": "roda_4",
+    "peruntukan": "angkut_tanaman",
     "tahun_produksi": 2018,
     "nomor_rangka": "MHMLOPU39JK163205",
     "skpd": "Distamhut",
     "pemegang_nip": "198305052009011015",
     "kondisi": "rusak_berat",
     "nilai_perolehan": 201000000,
-    "keterangan": "Peruntukan: Angkut Tanaman"
+    "keterangan": null
   },
   {
     "kode_barang_aset": "KND-DISPORA-0001",
@@ -627,12 +646,13 @@ export const KENDARAAN = [
     "merek": "Yamaha",
     "tipe": "NMAX 155 Connected",
     "jenis_kendaraan": "roda_2",
+    "peruntukan": "operasional",
     "tahun_produksi": 2023,
     "nomor_rangka": "MH3SG7110PJ218463",
     "skpd": "Dispora",
     "pemegang_nip": "198707142011011005",
     "kondisi": "baik",
     "nilai_perolehan": 32150000,
-    "keterangan": "Peruntukan: Operasional"
+    "keterangan": null
   }
 ];

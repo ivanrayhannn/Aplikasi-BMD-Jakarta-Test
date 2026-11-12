@@ -27,7 +27,7 @@ const JadwalTab = {
     <div class="table-wrap"><table class="stack">
       <thead><tr><th>Kendaraan</th><th>Unit</th><th>Servis terakhir</th><th>Jadwal berikutnya</th><th>Status</th><th>Kondisi</th></tr></thead>
       <tbody><tr v-for="r in rows" :key="r.kdo_id">
-        <td data-label="Kendaraan"><a :href="'#/kdo/' + r.kdo_id"><b>{{ r.nomor_polisi }}</b></a><span class="sub">{{ kendaraan(r) }}</span></td>
+        <td data-label="Kendaraan"><a :href="'#/kdo/' + r.kdo_id"><Plate :nopol="r.nomor_polisi" /></a><span class="sub">{{ kendaraan(r) }}</span></td>
         <td data-label="Unit">{{ r.perangkat_daerah }}</td><td data-label="Servis terakhir">{{ tanggal(r.servis_terakhir) }}</td><td data-label="Jadwal berikutnya">{{ tanggal(r.jadwal_berikutnya) }}</td>
         <td data-label="Status"><Badge :tone="tone('status_jadwal', r.status_jadwal)">{{ STATUS_JADWAL_LABEL[r.status_jadwal] }}</Badge>
           <span class="sub">{{ r.sisa_hari < 0 ? 'lewat ' + (-r.sisa_hari) + ' hari' : r.sisa_hari + ' hari lagi' }}</span></td>
@@ -56,7 +56,7 @@ const RekapTab = {
     <div class="table-wrap"><table class="stack">
       <thead><tr><th>Kendaraan</th><th>Unit</th><th class="num">Jumlah servis</th><th>Servis terakhir</th><th class="num">Total biaya</th></tr></thead>
       <tbody><tr v-for="r in rows" :key="r.kdo_id">
-        <td data-label="Kendaraan"><a :href="'#/kdo/' + r.kdo_id"><b>{{ r.nomor_polisi }}</b></a><span class="sub">{{ kendaraan(r) }}</span></td>
+        <td data-label="Kendaraan"><a :href="'#/kdo/' + r.kdo_id"><Plate :nopol="r.nomor_polisi" /></a><span class="sub">{{ kendaraan(r) }}</span></td>
         <td data-label="Unit">{{ r.perangkat_daerah }}</td><td data-label="Jumlah servis" class="num">{{ r.jumlah_servis }}</td><td data-label="Servis terakhir">{{ tanggal(r.servis_terakhir) }}</td>
         <td data-label="Total biaya" class="num"><b>{{ rupiah(r.total_biaya) }}</b></td></tr></tbody>
       <tfoot v-if="rows.length"><tr><th colspan="4">Total seluruh kendaraan</th><th class="num">{{ rupiah(total) }}</th></tr></tfoot>
@@ -81,11 +81,11 @@ const CatatanTab = {
       <label class="filter"><span>Jenis perawatan</span><EnumSelect v-model="filters.jenis_perawatan" group="jenis_perawatan" placeholder="Semua jenis" /></label>
       <button v-if="isAdmin" class="primary" @click="editing = {}">+ Catat Perawatan</button>
     </div>
-    <p class="hint" v-if="meta?.ringkasan">{{ meta.ringkasan.jumlah }} catatan · total {{ rupiah(meta.ringkasan.total_biaya) }}</p>
+    <p class="hint" v-if="meta?.ringkasan">{{ meta.ringkasan.jumlah }} catatan, total {{ rupiah(meta.ringkasan.total_biaya) }}</p>
     <div class="table-wrap"><table class="stack">
       <thead><tr><th>Tanggal</th><th>Kendaraan</th><th>Jenis</th><th>Bengkel</th><th class="num">Biaya</th><th>Kondisi setelah</th><th>Jadwal berikutnya</th></tr></thead>
       <tbody><tr v-for="r in rows" :key="r.id">
-        <td data-label="Tanggal">{{ tanggal(r.tanggal_servis) }}</td><td data-label="Kendaraan"><a :href="'#/kdo/' + r.kdo_id"><b>{{ r.nomor_polisi }}</b></a></td>
+        <td data-label="Tanggal">{{ tanggal(r.tanggal_servis) }}</td><td data-label="Kendaraan"><a :href="'#/kdo/' + r.kdo_id"><Plate :nopol="r.nomor_polisi" /></a></td>
         <td data-label="Jenis">{{ label('jenis_perawatan', r.jenis_perawatan) }}<span class="sub">{{ r.deskripsi }}</span></td><td data-label="Bengkel">{{ r.bengkel || '-' }}</td>
         <td data-label="Biaya" class="num">{{ rupiah(r.biaya) }}</td><td data-label="Kondisi setelah"><Badge :tone="tone('kondisi', r.kondisi_setelah)">{{ label('kondisi', r.kondisi_setelah) }}</Badge></td>
         <td data-label="Jadwal berikutnya">{{ tanggal(r.jadwal_berikutnya) }}</td></tr></tbody>

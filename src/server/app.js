@@ -16,6 +16,10 @@ export const VENDOR = {
   'jspdf.plugin.autotable.min.js': 'node_modules/jspdf-autotable/dist/jspdf.plugin.autotable.min.js',
   'sql-wasm.js': 'node_modules/sql.js/dist/sql-wasm.js',
   'sql-wasm.wasm': 'node_modules/sql.js/dist/sql-wasm.wasm',
+  'ahn-400.woff2': 'node_modules/@fontsource/atkinson-hyperlegible-next/files/atkinson-hyperlegible-next-latin-400-normal.woff2',
+  'ahn-600.woff2': 'node_modules/@fontsource/atkinson-hyperlegible-next/files/atkinson-hyperlegible-next-latin-600-normal.woff2',
+  'ahn-700.woff2': 'node_modules/@fontsource/atkinson-hyperlegible-next/files/atkinson-hyperlegible-next-latin-700-normal.woff2',
+  'ahm-400.woff2': 'node_modules/@fontsource/atkinson-hyperlegible-mono/files/atkinson-hyperlegible-mono-latin-400-normal.woff2',
 };
 
 export function createApp(db) {

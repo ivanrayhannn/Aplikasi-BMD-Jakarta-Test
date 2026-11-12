@@ -19,7 +19,7 @@ export const LoginPage = {
     return { ...form, submit, DEMO, SAMPLE };
   },
   template: `<div class="login"><form class="card" @submit.prevent="submit" novalidate>
-    <h1 class="brand-mark">SI-<span>KDO</span></h1>
+    <h1 class="brand-mark">SI-KDO</h1>
     <p class="lead">Sistem Informasi Kendaraan Dinas Operasional<br>Barang Milik Daerah</p>
     <div v-if="state.message" class="alert error" role="alert">{{ state.message }}</div>
     <Field label="Email" name="email" :error="errors.email"><input id="email" type="email" v-model="values.email" autocomplete="username" autofocus></Field>
@@ -157,7 +157,7 @@ export const PengaturanPage = {
     <div class="card" style="margin-top:16px"><h2>Pilihan Terkendali</h2>
       <p class="hint">Nilai tetap (ENUM) yang dipakai form kendaraan & pegawai. Nilai di luar daftar ditolak. Menambah pilihan memerlukan pembaruan aplikasi (migrasi), bukan tabel kategori.</p>
       <div class="enum-grid">
-        <div v-for="g in ['jenis_kendaraan', 'kondisi', 'bahan_bakar', 'golongan', 'status_kepegawaian', 'jenis_perawatan']" :key="g">
+        <div v-for="g in ['jenis_kendaraan', 'peruntukan', 'kondisi', 'bahan_bakar', 'golongan', 'status_kepegawaian', 'jenis_perawatan']" :key="g">
           <h3>{{ g.replaceAll('_', ' ') }}</h3><span v-for="o in ENUMS[g]" :key="o.value" class="chip">{{ o.label }}</span>
         </div>
       </div>

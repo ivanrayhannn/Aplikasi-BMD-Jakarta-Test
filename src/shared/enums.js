@@ -18,6 +18,23 @@ export const JENIS_KENDARAAN = options([
   ['roda_6', 'Roda 6'],
   ['bus', 'Bus'],
   ['truk', 'Truk'],
+  ['ambulans', 'Ambulans'],
+  ['mobil_pemadam', 'Mobil Pemadam'],
+  ['lainnya', 'Lainnya'],
+]);
+
+/** Peruntukan kendaraan (Q-8): untuk apa kendaraan dipakai, terpisah dari jenisnya. */
+export const PERUNTUKAN = options([
+  ['jabatan', 'Jabatan'],
+  ['operasional', 'Operasional'],
+  ['patroli', 'Patroli'],
+  ['kedaruratan', 'Kedaruratan'],
+  ['lapangan', 'Lapangan'],
+  ['layanan_keliling', 'Layanan Keliling'],
+  ['angkut_pegawai', 'Angkut Pegawai'],
+  ['angkut_barang', 'Angkut Barang'],
+  ['angkut_logistik', 'Angkut Logistik'],
+  ['angkut_tanaman', 'Angkut Tanaman'],
   ['lainnya', 'Lainnya'],
 ]);
 
@@ -71,6 +88,7 @@ export const PERAN = options([
 /** Kelompok yang ditampilkan di halaman Pengaturan → Pilihan Terkendali. */
 export const ENUMS = Object.freeze({
   jenis_kendaraan: JENIS_KENDARAAN,
+  peruntukan: PERUNTUKAN,
   kondisi: KONDISI,
   bahan_bakar: BAHAN_BAKAR,
   golongan: GOLONGAN,

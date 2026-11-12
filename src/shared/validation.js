@@ -2,7 +2,7 @@
 // Setiap skema adalah peta field → aturan. `validate()` mengembalikan data yang sudah
 // dinormalisasi beserta pesan error per field, sehingga pesan di form dan di respons API selalu sama.
 import {
-  KONDISI, JENIS_KENDARAAN, BAHAN_BAKAR, GOLONGAN, JENIS_KELAMIN,
+  KONDISI, JENIS_KENDARAAN, PERUNTUKAN, BAHAN_BAKAR, GOLONGAN, JENIS_KELAMIN,
   STATUS_KEPEGAWAIAN, JENIS_PERAWATAN, PERAN, values,
 } from './enums.js';
 
@@ -114,6 +114,7 @@ export const schemas = {
     warna: text('Warna', { max: 30 }),
     kondisi: oneOf('Kondisi', KONDISI, { fallback: 'baik' }),
     jenis_kendaraan: oneOf('Jenis kendaraan', JENIS_KENDARAAN, { required: true }),
+    peruntukan: oneOf('Peruntukan', PERUNTUKAN),
     nomor_rangka: text('Nomor rangka', { required: true, max: 30, transform: (s) => s.toUpperCase() }),
     nomor_mesin: text('Nomor mesin', { max: 30, transform: (s) => s.toUpperCase() }),
     isi_silinder_cc: integer('Isi silinder', { min: 0, max: 100_000 }),

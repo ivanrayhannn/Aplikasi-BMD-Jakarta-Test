@@ -2,39 +2,58 @@
  * SI-KDO: gaya antarmuka. Arah desain dan alasan tiap keputusan ada di DESIGN.md.
  * Kontras pasangan warna sudah dihitung (WCAG AA): teks >= 4.5:1, batas kontrol >= 3:1.
  */
+@font-face { font-family: "Atkinson Next"; src: url("vendor/ahn-400.woff2") format("woff2"); font-weight: 400; font-display: swap; }
+@font-face { font-family: "Atkinson Next"; src: url("vendor/ahn-600.woff2") format("woff2"); font-weight: 600; font-display: swap; }
+@font-face { font-family: "Atkinson Next"; src: url("vendor/ahn-700.woff2") format("woff2"); font-weight: 700; font-display: swap; }
+@font-face { font-family: "Atkinson Mono"; src: url("vendor/ahm-400.woff2") format("woff2"); font-weight: 400; font-display: swap; }
+
 :root {
-  --bg: #f4f6f9;
+  --bg: #f3f4f1;              /* kertas arsip */
   --surface: #ffffff;
-  --surface-2: #f8f9fb;
-  --border: #dfe3ea;          /* garis kartu/tabel (dekoratif, bukan batas kontrol) */
+  --surface-2: #f7f8f6;
+  --border: #dde1e3;          /* garis kartu/tabel (dekoratif, bukan batas kontrol) */
   --control-border: #8a94a3;  /* batas input & tombol: 3.07:1 terhadap putih */
-  --text: #1c2430;
-  --muted: #5d6878;           /* 5.65:1 di putih, 4.90:1 di #eceff3 */
-  --primary: #0b4f8a;
-  --primary-hover: #093f6e;
-  --primary-soft: #e7f0f9;
-  --sidebar: #0f2a44;
-  --sidebar-text: #c9d6e4;
-  --accent: #e8792b;          /* satu-satunya aksen: nama produk + penanda menu aktif */
+  --text: #1d2327;            /* tinta: 14.39:1 di kertas */
+  --muted: #5b6670;           /* 5.87:1 di putih, 5.31:1 di kertas */
+  --primary: #23458f;         /* biru tinta stempel: 9.05:1 di putih */
+  --primary-hover: #1b376f;
+  --primary-soft: #e8edf7;
+  --sidebar: #1f2b31;         /* slate */
+  --sidebar-text: #c6d0d5;    /* 9.24:1 */
+  --sidebar-muted: #93a3ab;   /* 5.57:1 */
+  --plate: #c0182c;           /* plat merah: satu-satunya aksen, khusus nomor polisi (putih 6.16:1) */
   --ok: #17704a;   --ok-bg: #e5f4ec;
   --warn: #9a6200; --warn-bg: #fdf1dc;
   --bad: #b3261e;  --bad-bg: #fbe7e5;
-  --radius: 8px;
-  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  font-size: 14px;
+  --radius: 6px;
+  --font: "Atkinson Next", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "Atkinson Mono", ui-monospace, Consolas, monospace;
+  font-family: var(--font);
+  font-size: 15px;
   color: var(--text);
-  line-height: 1.45;
+  line-height: 1.5;
 }
 * { box-sizing: border-box; }
 body { margin: 0; background: var(--bg); }
 a { color: var(--primary); text-decoration: none; }
 a:hover { text-decoration: underline; }
-h1 { font-size: 20px; margin: 0; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-h2 { font-size: 15px; margin: 0 0 12px; }
+h1 { font-size: 24px; font-weight: 700; letter-spacing: -0.01em; line-height: 1.2; margin: 0; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+h2 { font-size: 16px; font-weight: 700; margin: 0 0 12px; }
 h3 { font-size: 13px; margin: 0 0 6px; color: var(--muted); }
 code.detail { font-size: 12px; word-break: break-all; color: var(--muted); }
 .nowrap { white-space: nowrap; }
 .grow { flex: 1; min-width: 200px; }
+
+/* Plat merah: nomor polisi kendaraan dinas selalu tampil seperti platnya. Bingkai putih meniru tepi plat asli. */
+.plate {
+  display: inline-block; font-family: var(--font); font-weight: 700; font-size: 13.5px; letter-spacing: 0.05em; line-height: 1;
+  color: #fff; background: var(--plate); border-radius: 4px; padding: 5px 9px 4px; white-space: nowrap;
+  box-shadow: inset 0 0 0 1.5px #fff, 0 0 0 1px var(--plate);
+}
+.plate.lg { font-size: 24px; padding: 8px 16px 7px; border-radius: 6px; box-shadow: inset 0 0 0 2.5px #fff, 0 0 0 1.5px var(--plate); }
+a:hover .plate { box-shadow: inset 0 0 0 1.5px #fff, 0 0 0 3px #f2b8bf; }
+a:has(.plate):hover { text-decoration: none; }
+.code { font-family: var(--mono); font-size: 0.93em; }
 
 /* Affordance dasar: kursor penunjuk pada semua kontrol aktif, dan fokus yang selalu terlihat. */
 a[href], button, select, summary, label[for], [role="tab"], input[type="checkbox"], input[type="file"], label.check { cursor: pointer; }
@@ -47,19 +66,18 @@ input:focus-visible, select:focus-visible, textarea:focus-visible { outline-offs
 .sidebar { background: var(--sidebar); color: var(--sidebar-text); padding: 18px 12px; display: flex; flex-direction: column; gap: 2px; position: sticky; top: 0; height: 100vh; overflow-y: auto; }
 .sidebar :focus-visible { outline-color: #fff; }
 .brand { padding: 0 10px 16px; border-bottom: 1px solid #ffffff1a; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; gap: 8px; }
-.brand b { display: block; color: #fff; font-size: 18px; }
-.brand b span, .brand-mark span { color: var(--accent); }
-.brand small { font-size: 12px; color: #a4b4c4; display: block; margin-top: 2px; }
+.brand b { display: block; color: #fff; font-size: 18px; font-weight: 700; letter-spacing: 0.02em; }
+.brand small { font-size: 12.5px; color: var(--sidebar-muted); display: block; margin-top: 2px; }
 .menu-toggle { display: none; }
 .nav-links { display: flex; flex-direction: column; gap: 2px; }
-.nav-group { font-size: 12px; color: #a4b4c4; padding: 14px 12px 4px; }
+.nav-group { font-size: 12.5px; color: var(--sidebar-muted); padding: 16px 12px 4px; }
 .nav-links a { color: var(--sidebar-text); padding: 9px 12px; border-radius: 6px; display: block; }
 .nav-links a:hover { background: #ffffff12; text-decoration: none; }
-.nav-links a.active { background: #ffffff1f; color: #fff; box-shadow: inset 3px 0 0 var(--accent); }
+.nav-links a.active { background: #2d3c43; color: #fff; font-weight: 600; box-shadow: inset 3px 0 0 #e9eef0; }
 .sidebar .user { margin-top: auto; padding: 12px; border-top: 1px solid #ffffff1a; font-size: 12px; display: flex; flex-direction: column; gap: 2px; }
 .sidebar .user b { color: #fff; font-size: 13px; }
 .sidebar .user .actions { margin-top: 8px; }
-.sidebar button { background: transparent; color: var(--sidebar-text); border-color: #a4b4c4; }
+.sidebar button { background: transparent; color: var(--sidebar-text); border-color: var(--sidebar-muted); }
 .sidebar button:hover { background: #ffffff12; }
 main { padding: 24px 28px 48px; min-width: 0; }
 .sample-banner { background: var(--warn-bg); color: var(--warn); padding: 8px 14px; border-radius: 6px; margin-bottom: 16px; font-size: 13px; }
@@ -177,6 +195,30 @@ dl.kv dd { margin: 0; font-weight: 500; min-width: 0; overflow-wrap: anywhere; }
 .reminders li { padding: 8px 0; border-bottom: 1px solid var(--border); }
 .reminders li:last-child { border-bottom: 0; }
 
+/* Dashboard: pita ringkasan armada + kolom "perlu perhatian" sebagai keputusan utama */
+.fleet { display: grid; grid-template-columns: minmax(220px, 1fr) 2.2fr; gap: 24px; align-items: center; padding: 22px 24px; }
+.fleet-total { display: flex; align-items: baseline; gap: 14px; color: var(--text); }
+.fleet-total:hover { text-decoration: none; }
+.fleet-total:hover .fleet-number { text-decoration: underline; text-decoration-thickness: 3px; text-underline-offset: 6px; }
+.fleet-number { font-size: 64px; font-weight: 700; line-height: 1; letter-spacing: -0.03em; color: var(--primary); font-variant-numeric: tabular-nums; }
+.fleet-caption { font-weight: 700; font-size: 16px; }
+.fleet-caption .sub { font-weight: 400; font-size: 13.5px; margin-top: 2px; }
+.fleet-condition .bar { height: 14px; }
+.condition-links { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin-top: 12px; }
+.cond { display: flex; flex-direction: column; padding: 8px 10px; border-radius: var(--radius); color: var(--text); border: 1px solid var(--border); }
+.cond:hover { text-decoration: none; border-color: var(--control-border); background: var(--surface-2); }
+.cond b { font-size: 22px; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.cond span { font-size: 13px; color: var(--muted); }
+.cond.ok b { color: var(--ok); } .cond.warn b { color: var(--warn); } .cond.bad b { color: var(--bad); }
+.dash-grid { display: grid; grid-template-columns: 1.15fr 1fr; grid-template-rows: auto 1fr; gap: 0 16px; }
+.dash-grid .attention { grid-row: span 2; align-self: start; }
+.attention h3 { font-size: 14px; color: var(--text); margin: 16px 0 4px; }
+.sub-inline { font-weight: 400; color: var(--muted); font-size: 13px; }
+.reminders li { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; }
+.vehicle-list { list-style: none; margin: 0; padding: 0; }
+.vehicle-list li { display: grid; grid-template-columns: 118px 1fr auto; gap: 12px; align-items: center; padding: 9px 0; border-bottom: 1px solid var(--border); }
+.vehicle-list li:last-child { border-bottom: 0; }
+
 /* Tab */
 .tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--border); margin: -4px 0 16px; overflow-x: auto; }
 .tabs button { border: 0; border-radius: 0; background: none; padding: 10px 14px; color: var(--muted); border-bottom: 2px solid transparent; white-space: nowrap; }
@@ -195,7 +237,7 @@ dl.kv dd { margin: 0; font-weight: 500; min-width: 0; overflow-wrap: anywhere; }
 /* Login & penolakan akses */
 .login { min-height: 100vh; display: grid; place-items: center; padding: 16px; background: var(--sidebar); }
 .login .card { width: min(400px, 100%); padding: 28px; display: grid; gap: 14px; margin: 0; }
-.brand-mark { font-size: 24px; font-weight: 700; margin: 0; display: block; }
+.brand-mark { font-size: 26px; font-weight: 700; margin: 0; display: block; letter-spacing: 0.02em; }
 .lead { color: var(--muted); margin: -8px 0 4px; }
 .demo-accounts { font-size: 12.5px; color: var(--muted); background: var(--surface-2); padding: 10px; border-radius: 6px; display: grid; gap: 4px; }
 .demo-accounts b { color: var(--text); }
@@ -267,6 +309,13 @@ code.type { font-size: 12px; overflow-wrap: anywhere; }
   .filter { flex: 1 1 calc(50% - 6px); min-width: 0; }
   .filter.grow { flex: 1 1 100%; }
   .page-head .actions { width: 100%; }
+  .fleet { grid-template-columns: 1fr; padding: 16px; gap: 14px; }
+  .fleet-number { font-size: 48px; }
+  .condition-links { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .dash-grid { grid-template-columns: 1fr; }
+  .dash-grid .attention { grid-row: auto; }
+  .vehicle-list li { grid-template-columns: auto 1fr; }
+  .vehicle-list li > .badge { grid-column: 2; justify-self: start; }
 }
 /* Ponsel kecil: tiap baris tabel menjadi kartu berlabel, tidak ada kolom yang terdorong keluar layar. */
 @media (max-width: 640px) {

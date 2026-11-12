@@ -94,7 +94,7 @@ export async function exportExcel(report) {
   ws.getCell(4, 1).font = { bold: true, size: 12 };
   ws.getCell(4, 1).alignment = { horizontal: 'center' };
   merge(4);
-  ws.getCell(5, 1).value = [report.periode ? `Periode: ${report.periode}` : '', `Tanggal cetak: ${report.dicetakPada}`].filter(Boolean).join('   ·   ');
+  ws.getCell(5, 1).value = [report.periode ? `Periode: ${report.periode}` : '', `Tanggal cetak: ${report.dicetakPada}`].filter(Boolean).join('    ');
   ws.getCell(5, 1).alignment = { horizontal: 'center' };
   merge(5);
 

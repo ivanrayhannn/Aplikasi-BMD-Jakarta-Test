@@ -3,7 +3,7 @@ import { createApp, computed, ref, watch, onMounted } from '../vendor/vue.js';
 import { store, isAdmin, restoreSession, logout } from './store.js';
 import { route, defineRoute, startRouter, navigate } from './router.js';
 import { DEMO, SAMPLE, resetDemo } from './api.js';
-import { LoadingState } from './components/ui.js';
+import { LoadingState, Plate } from './components/ui.js';
 import { label } from './format.js';
 import { Dashboard } from './pages/dashboard.js';
 import { KdoList, KdoDetail, KdoForm } from './pages/kdo.js';
@@ -77,7 +77,7 @@ const App = {
     <div v-else class="layout">
       <div class="sidebar no-print" :class="{ open: menuOpen }">
         <header class="brand">
-          <div><b>SI-<span>KDO</span></b><small>{{ store.settings?.nama_instansi }}</small></div>
+          <div><b>SI-KDO</b><small>{{ store.settings?.nama_instansi }}</small></div>
           <button type="button" class="menu-toggle small" aria-controls="menu-utama" :aria-expanded="menuOpen" @click="menuOpen = !menuOpen">
             {{ menuOpen ? 'Tutup' : 'Menu' }}</button>
         </header>
@@ -102,4 +102,4 @@ const App = {
   </template>`,
 };
 
-createApp(App).component('LoadingState', LoadingState).mount('#app');
+createApp(App).component('LoadingState', LoadingState).component('Plate', Plate).mount('#app');

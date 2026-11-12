@@ -32,7 +32,7 @@ export const PnsList = {
         <thead><tr><th>Nama / NIP</th><th>Jabatan</th><th>Golongan</th><th>Unit Kerja</th><th class="num">KDO</th><th>Status</th></tr></thead>
         <tbody>
           <tr v-for="p in rows" :key="p.id" :class="{ inactive: p.status_kepegawaian !== 'aktif' }">
-            <td data-label="Nama / NIP"><a :href="'#/pns/' + p.id"><b>{{ p.nama_pegawai }}</b></a><span class="sub">{{ p.nip }}</span></td>
+            <td data-label="Nama / NIP"><a :href="'#/pns/' + p.id"><b>{{ p.nama_pegawai }}</b></a><span class="sub code">{{ p.nip }}</span></td>
             <td data-label="Jabatan">{{ p.jabatan }}</td>
             <td data-label="Golongan">{{ p.golongan || '-' }}<span class="sub">{{ p.pangkat }}</span></td>
             <td data-label="Unit Kerja">{{ p.perangkat_daerah_singkatan || p.perangkat_daerah }}</td>
@@ -66,7 +66,7 @@ export const PnsDetail = {
     <div v-if="error" class="alert error">{{ error }}</div>
     <LoadingState v-if="!p && !error" />
     <template v-if="p">
-      <PageHeader :title="p.nama_pegawai" :subtitle="p.nip + ' · ' + p.jabatan" back="#/pns" back-label="PNS">
+      <PageHeader :title="p.nama_pegawai" :subtitle="p.jabatan + ', NIP ' + p.nip" back="#/pns" back-label="PNS">
         <template #badges> <Badge :tone="tone('status_kepegawaian', p.status_kepegawaian)">{{ label('status_kepegawaian', p.status_kepegawaian) }}</Badge></template>
         <template v-if="isAdmin">
           <button class="danger" @click="confirming = true">Hapus</button>
@@ -81,7 +81,7 @@ export const PnsDetail = {
       </dl></div>
       <div class="card"><h2>Kendaraan yang sedang dipegang</h2>
         <div class="table-wrap"><table><tbody>
-          <tr v-for="k in p.kdo_dipegang" :key="k.id"><td><a :href="'#/kdo/' + k.id"><b>{{ k.nomor_polisi }}</b></a></td><td>{{ k.merek }} {{ k.tipe }}</td>
+          <tr v-for="k in p.kdo_dipegang" :key="k.id"><td><a :href="'#/kdo/' + k.id"><Plate :nopol="k.nomor_polisi" /></a></td><td>{{ k.merek }} {{ k.tipe }}</td>
             <td><Badge :tone="tone('kondisi', k.kondisi)">{{ label('kondisi', k.kondisi) }}</Badge></td></tr>
         </tbody></table></div>
         <EmptyState v-if="!p.kdo_dipegang.length" title="Tidak sedang memegang kendaraan" />
@@ -90,7 +90,7 @@ export const PnsDetail = {
         <div class="table-wrap"><table class="stack">
           <thead><tr><th>Kendaraan</th><th>Mulai</th><th>Selesai</th><th>Status</th><th>Keterangan</th></tr></thead>
           <tbody><tr v-for="r in p.riwayat_pemakaian" :key="r.id">
-            <td data-label="Kendaraan"><a :href="'#/kdo/' + r.kdo_id">{{ r.nomor_polisi }}</a><span class="sub">{{ r.merek }} {{ r.tipe }}</span></td>
+            <td data-label="Kendaraan"><a :href="'#/kdo/' + r.kdo_id"><Plate :nopol="r.nomor_polisi" /></a><span class="sub">{{ r.merek }} {{ r.tipe }}</span></td>
             <td data-label="Mulai">{{ tanggal(r.tanggal_mulai) }}</td><td data-label="Selesai">{{ r.tanggal_selesai ? tanggal(r.tanggal_selesai) : 'Masih berjalan' }}</td>
             <td data-label="Status"><Badge :tone="tone('status_pemakaian', r.status)">{{ label('status_pemakaian', r.status) }}</Badge></td>
             <td data-label="Keterangan">{{ r.keterangan || '-' }}</td></tr></tbody>

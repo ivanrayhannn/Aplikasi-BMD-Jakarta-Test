@@ -97,6 +97,8 @@ test('filter daftar kendaraan: q, kondisi, jenis, tanpa pemegang', async () => {
   assert.deepEqual(q.body.data.map((k) => k.nomor_polisi), ['B 1709 PQB', 'B 9547 PQC']);
   const rb = await api('GET', '/kdo?kondisi=rusak_berat&jenis_kendaraan=roda_2', { token });
   assert.deepEqual(rb.body.data.map((k) => k.nomor_polisi), ['B 3920 PQJ']);
+  const jabatan = await api('GET', '/kdo?peruntukan=jabatan', { token });
+  assert.deepEqual(jabatan.body.data.map((k) => k.nomor_polisi), ['B 1105 PQK', 'B 1213 PQH']);
   const tanpa = await api('GET', '/kdo?tanpa_pemegang=1', { token });
   assert.ok(tanpa.body.data.length > 0 && tanpa.body.data.every((k) => k.pemegang_pns_id === null));
 });

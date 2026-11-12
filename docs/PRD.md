@@ -426,23 +426,24 @@ Strategi uji berlapis:
 | HA-1 s.d. HA-6 | `src/api/index.js`, `src/api/modules/auth.js`, `src/api/modules/pengguna.js` | `test/auth.test.js`; e2e "Login", "Petugas", "Kelola pengguna" |
 | PA-1 s.d. PA-6 | `src/api/modules/pengaturan.js`, `public/js/pages/admin.js` | `test/operasional.test.js`: validasi, kop; e2e "Pengaturan" |
 
-## 13. Pertanyaan terbuka
+## 13. Pertanyaan terbuka dan keputusan
 
-| ID | Pertanyaan | Dampak bila tidak dijawab |
+| ID | Pertanyaan | Keputusan pemilik produk (12 Nov 2026) |
 |---|---|---|
-| Q-1 | Apakah stack produksi tetap Node.js + SQLite, atau wajib MySQL 8.4 di server instansi (Laragon)? | DDL MySQL sudah ada, tetapi lapisan akses data perlu diganti dan belum diuji terhadap MySQL. |
-| Q-2 | Impor data awal bertahap (Excel/CSV) dibutuhkan pada rilis pertama? | Saat ini data dimasukkan manual lewat form. |
-| Q-3 | Bolehkah status PNS diubah menjadi pensiun/mutasi saat masih memegang kendaraan (BR-17)? | Saat ini ditolak sampai pemakaian ditutup. |
-| Q-4 | Apakah pemegang kendaraan harus berasal dari perangkat daerah yang sama dengan pemilik kendaraan? | PRD tidak mengatur; saat ini lintas unit diizinkan. |
-| Q-5 | Siapa penanda tangan laporan (jabatan dan nama) dan apakah perlu NIP di kolom tanda tangan? | Saat ini "Pengelola Aset" dengan nama kosong. |
-| Q-6 | Target waktu respons pencarian (NF-2) dan jumlah data uji beban? | Kinerja belum diukur. |
-| Q-8 | Perlu kolom khusus `peruntukan` (Operasional, Jabatan, Patroli, Kedaruratan, ...) dan ENUM jenis tambahan (ambulans, pemadam)? | Saat ini peruntukan ada di keterangan dan belum dapat disaring. |
-| Q-7 | Logo SVG tidak dapat dimasukkan ke PDF/Excel. Apakah logo resmi tersedia dalam PNG/JPG? | Kop PDF/Excel tampil tanpa logo bila logo berformat SVG. |
+| Q-1 | Produksi wajib MySQL/Laragon? | Tidak perlu Laragon; SQLite dipakai. DDL MySQL disimpan sebagai rancangan. |
+| Q-2 | Impor data bertahap? | Tidak perlu; data dimasukkan manual. |
+| Q-3 | PNS boleh pensiun/mutasi saat masih memegang kendaraan? | Tidak. Aset diselesaikan dulu (BR-17 dipertahankan). |
+| Q-4 | Pemegang harus dari unit yang sama dengan kendaraan? | Boleh beda unit. |
+| Q-5 | Penanda tangan laporan? | "Pengelola Aset" saja. |
+| Q-6 | Target waktu respons? | Tidak perlu (NF-2 diterima tanpa target terukur). |
+| Q-7 | Logo SVG tidak masuk PDF/Excel; ada PNG/JPG resmi? | Terbuka. |
+| Q-8 | Kolom `peruntukan` dan jenis tambahan? | Ya. Ditambahkan kolom `peruntukan` (ENUM, dapat disaring) dan jenis `ambulans`, `mobil_pemadam`. |
 
 ## 14. Riwayat revisi
 
 | Versi | Tanggal | Perubahan |
 |---|---|---|
 | 1.0 | (sumber) | PRD dan 8 spesifikasi fitur dari pemilik produk. |
+| 1.3 | 12 Nov 2026 | Keputusan Q-1 s.d. Q-8; kolom peruntukan; desain ulang (plat merah, Atkinson Hyperlegible, dashboard berbasis "perlu perhatian"). |
 | 1.2 | 12 Nov 2026 | Data awal diganti dengan data uji DKI dari pemilik produk (36 SKPD, 20 pegawai, 20 kendaraan); `nomor_mesin` boleh kosong (K-9); menu Rancangan Database (ERD dan kamus data). |
 | 1.1 | 12 Nov 2026 | Versi terdokumentasi: ID kebutuhan dan kriteria, status implementasi, aturan bisnis BR-01 s.d. BR-20, keputusan implementasi K-1 s.d. K-8, matriks keterlacakan, pertanyaan terbuka. |

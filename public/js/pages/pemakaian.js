@@ -29,8 +29,8 @@ export const PemakaianPage = {
       <div class="table-wrap"><table class="stack">
         <thead><tr><th>Kendaraan</th><th>Pegawai</th><th>Unit</th><th>Mulai</th><th>Selesai</th><th>Status</th><th>Keperluan</th><th v-if="isAdmin"></th></tr></thead>
         <tbody><tr v-for="r in rows" :key="r.id">
-          <td data-label="Kendaraan"><a :href="'#/kdo/' + r.kdo_id"><b>{{ r.nomor_polisi }}</b></a><span class="sub">{{ kendaraan(r) }}</span></td>
-          <td data-label="Pegawai"><a v-if="r.pns_id" :href="'#/pns/' + r.pns_id">{{ r.pns_nama }}</a><template v-else>{{ r.pns_nama }}</template><span class="sub">{{ r.pns_nip }}</span></td>
+          <td data-label="Kendaraan"><a :href="'#/kdo/' + r.kdo_id"><Plate :nopol="r.nomor_polisi" /></a><span class="sub">{{ kendaraan(r) }}</span></td>
+          <td data-label="Pegawai"><a v-if="r.pns_id" :href="'#/pns/' + r.pns_id">{{ r.pns_nama }}</a><template v-else>{{ r.pns_nama }}</template><span class="sub code">{{ r.pns_nip }}</span></td>
           <td data-label="Unit">{{ r.perangkat_daerah }}</td>
           <td data-label="Mulai">{{ tanggal(r.tanggal_mulai) }}</td><td data-label="Selesai">{{ r.tanggal_selesai ? tanggal(r.tanggal_selesai) : 'Masih berjalan' }}</td>
           <td data-label="Status"><Badge :tone="tone('status_pemakaian', r.status)">{{ label('status_pemakaian', r.status) }}</Badge></td>

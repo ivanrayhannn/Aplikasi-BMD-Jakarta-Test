@@ -15,11 +15,11 @@ const REPORTS = {
   kendaraan: {
     title: 'Laporan Daftar Kendaraan Dinas',
     endpoint: '/laporan/kendaraan',
-    filters: { perangkat_daerah_id: '', kondisi: '', jenis_kendaraan: '' },
+    filters: { perangkat_daerah_id: '', kondisi: '', jenis_kendaraan: '', peruntukan: '' },
     build: (rows, meta) => ({
-      columns: [{ label: 'No', align: 'right' }, { label: 'No. Polisi' }, { label: 'Merek / Tipe' }, { label: 'Jenis' },
+      columns: [{ label: 'No', align: 'right' }, { label: 'No. Polisi' }, { label: 'Merek / Tipe' }, { label: 'Jenis' }, { label: 'Peruntukan' },
         { label: 'Tahun', align: 'center' }, { label: 'Kondisi' }, { label: 'Unit Pemilik' }, { label: 'Pemegang' }],
-      rows: rows.map((r, i) => [String(i + 1), r.nomor_polisi, kendaraan(r), label('jenis_kendaraan', r.jenis_kendaraan),
+      rows: rows.map((r, i) => [String(i + 1), r.nomor_polisi, kendaraan(r), label('jenis_kendaraan', r.jenis_kendaraan), label('peruntukan', r.peruntukan),
         String(r.tahun_produksi), label('kondisi', r.kondisi), r.perangkat_daerah, r.pemegang_nama ?? '-']),
       summary: [
         ...meta.ringkasan.per_kondisi.map((k) => [`Kondisi ${label('kondisi', k.kondisi)}`, `${k.jumlah} unit`]),
@@ -133,10 +133,11 @@ export const LaporanPage = {
         <template v-if="type === 'kendaraan'">
           <label class="filter"><span>Kondisi</span><EnumSelect v-model="filters.kondisi" group="kondisi" placeholder="Semua kondisi" /></label>
           <label class="filter"><span>Jenis kendaraan</span><EnumSelect v-model="filters.jenis_kendaraan" group="jenis_kendaraan" placeholder="Semua jenis" /></label>
+          <label class="filter"><span>Peruntukan</span><EnumSelect v-model="filters.peruntukan" group="peruntukan" placeholder="Semua peruntukan" /></label>
         </template>
         <template v-if="type === 'perawatan'">
           <label class="filter"><span>Kendaraan</span><select v-model="filters.kdo_id"><option value="">Semua kendaraan</option>
-            <option v-for="k in vehicles" :key="k.id" :value="String(k.id)">{{ k.nomor_polisi }} · {{ k.merek }} {{ k.tipe }}</option></select></label>
+            <option v-for="k in vehicles" :key="k.id" :value="String(k.id)">{{ k.nomor_polisi }}, {{ k.merek }} {{ k.tipe }}</option></select></label>
         </template>
         <template v-if="type !== 'kendaraan'">
           <label class="filter"><span>Dari tanggal</span><input type="date" v-model="filters.dari" :max="filters.sampai || undefined"></label>
@@ -157,7 +158,7 @@ export const LaporanPage = {
         <div><b>{{ report.kop.nama_instansi }}</b><span>{{ report.kop.alamat }}</span></div>
       </header>
       <h2 class="report-title">{{ report.title }}</h2>
-      <p class="report-meta"><span v-if="report.periode">Periode: {{ report.periode }} · </span>Tanggal cetak: {{ report.dicetakPada }}</p>
+      <p class="report-meta"><span v-if="report.periode">Periode: {{ report.periode }}. </span>Tanggal cetak: {{ report.dicetakPada }}</p>
       <EmptyState v-if="report.empty" title="Tidak ada data untuk filter ini" hint="Ubah filter atau periode laporan. Tombol cetak & unduh dinonaktifkan saat laporan kosong." />
       <template v-else>
         <div class="table-wrap"><table class="report-table stack">

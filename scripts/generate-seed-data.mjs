@@ -1,6 +1,7 @@
 // Membangkitkan src/api/seed-data.js dari docs/data/data_aset_kendaraan_dki.md (tabel Markdown pemilik produk).
 // Jalankan: node scripts/generate-seed-data.mjs
 import { readFileSync, writeFileSync } from 'node:fs';
+import { PERUNTUKAN } from '../src/shared/enums.js';
 
 const SOURCE = 'docs/data/data_aset_kendaraan_dki.md';
 const md = readFileSync(SOURCE, 'utf8');
@@ -12,8 +13,14 @@ function rows(from, to) {
     .map((l) => l.trim().replace(/^\||\|$/g, '').split('|').map((c) => c.trim()));
 }
 
-// Jenis di sumber menggabungkan jenis dan peruntukan ("Roda 4 – Operasional"); ENUM hanya menyimpan jenisnya.
-const JENIS = { 'Roda 4': 'roda_4', 'Roda 2': 'roda_2', 'Truk Sampah': 'truk', 'Truk Dump': 'truk', 'Mobil Pemadam': 'truk', Ambulans: 'lainnya' };
+
+// Jenis di sumber menggabungkan jenis dan peruntukan ("Roda 4 – Operasional"); keduanya dipisah ke dua kolom ENUM.
+const JENIS = { 'Roda 4': 'roda_4', 'Roda 2': 'roda_2', 'Truk Sampah': 'truk', 'Truk Dump': 'truk', 'Mobil Pemadam': 'mobil_pemadam', Ambulans: 'ambulans' };
+const peruntukanOf = (label) => {
+  const found = PERUNTUKAN.find((o) => o.label === label);
+  if (!found) throw new Error(`Peruntukan tidak dikenal: ${label}`);
+  return found.value;
+};
 const KONDISI = { Baik: 'baik', 'Rusak Ringan': 'rusak_ringan', 'Rusak Berat': 'rusak_berat' };
 
 const skpd = rows('## 1. Master SKPD', '## 2.').map(([kode, nama_dinas, singkatan]) => ({ kode, nama_dinas, singkatan }));
@@ -26,9 +33,11 @@ const kendaraan = rows('## 3. Aset Kendaraan Dinas', '## Ringkasan').map(
     const spasi = merekTipe.indexOf(' ');
     return {
       kode_barang_aset, nomor_polisi, merek: merekTipe.slice(0, spasi), tipe: merekTipe.slice(spasi + 1),
-      jenis_kendaraan: JENIS[base], tahun_produksi: Number(tahun), nomor_rangka, skpd, pemegang_nip,
+      jenis_kendaraan: JENIS[base], peruntukan: peruntukan ? peruntukanOf(peruntukan) : null,
+      tahun_produksi: Number(tahun), nomor_rangka, skpd, pemegang_nip,
       kondisi: KONDISI[kondisi], nilai_perolehan: Number(nilai.replace(/\./g, '')),
-      keterangan: peruntukan ? `Peruntukan: ${peruntukan}` : `Kendaraan khusus: ${base}`,
+      // Truk sampah/dump hanya punya jenis "truk" di ENUM; nama aslinya disimpan agar tidak hilang.
+      keterangan: base.startsWith('Truk') ? base : null,
     };
   });
 
@@ -52,7 +61,7 @@ export const SKPD = ${json(skpd)};
 export const PEGAWAI = ${json(pegawai)};
 
 /**
- * ${kendaraan.length} kendaraan dinas. \`jenis_kendaraan\` dipetakan ke ENUM; peruntukan atau jenis khusus disimpan di \`keterangan\`.
+ * ${kendaraan.length} kendaraan dinas. Jenis dan peruntukan dari kolom "Jenis" sumber dipisah ke dua ENUM.
  * \`pemegang_nip\` menjadi pemakaian aktif sejak data dimuat.
  */
 export const KENDARAAN = ${json(kendaraan)};
