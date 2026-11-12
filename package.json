@@ -1,0 +1,18 @@
+{
+  "name": "aplikasi-kdo-bmd",
+  "version": "1.0.0",
+  "description": "Aplikasi pengelolaan Kendaraan Dinas Operasional (KDO) Perangkat Daerah - Barang Milik Daerah",
+  "type": "module",
+  "main": "src/server.js",
+  "engines": {
+    "node": ">=22.5"
+  },
+  "scripts": {
+    "start": "node --no-warnings src/server.js",
+    "test": "node --no-warnings --test test/*.test.js"
+  },
+  "dependencies": {
+    "express": "5.1.0",
+    "vue": "3.5.13"
+  }
+}
