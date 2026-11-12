@@ -1,4 +1,4 @@
-// Menu Dokumen: tautan ke seluruh isi folder docs di GitHub.
+// Menu Dokumen: tautan ke seluruh isi folder docs di GitHub. Berkas Excel memakai /raw/ agar langsung terunduh.
 import { PageHeader } from '../components/ui.js';
 
 const BASE = 'https://github.com/ivanrayhannn/Aplikasi-BMD-Jakarta-Test/blob/claude/dreamy-pascal-qxpvy1/';
@@ -17,7 +17,7 @@ const DOCS = [
 
 export const DokumenPage = {
   components: { PageHeader },
-  setup: () => ({ docs: DOCS.map(([path, title, desc]) => ({ href: BASE.replace('/blob/', path.endsWith('features') ? '/tree/' : '/blob/') + path, title, desc, path })) }),
+  setup: () => ({ docs: DOCS.map(([path, title, desc]) => ({ href: BASE.replace('/blob/', path.endsWith('features') ? '/tree/' : path.endsWith('.xlsx') ? '/raw/' : '/blob/') + path, title, desc, path })) }),
   template: `<div>
     <PageHeader title="Dokumen" subtitle="Dokumentasi proyek di repositori GitHub" />
     <div class="card"><ul class="vehicle-list doc-list"><li v-for="d in docs" :key="d.path">
