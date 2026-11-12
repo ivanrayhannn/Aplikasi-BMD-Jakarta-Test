@@ -13,5 +13,6 @@ for (const [name, from] of Object.entries(VENDOR)) cpSync(from, `${out}/vendor/$
 cpSync('src/shared', `${out}/lib/shared`, { recursive: true });
 cpSync('src/api', `${out}/lib/api`, { recursive: true });
 cpSync('demo/backend.js', `${out}/demo-backend.js`);
+cpSync('db/mysql', `${out}/db`, { recursive: true });
 writeFileSync(`${out}/.nojekyll`, '');
 console.log(`Build GitHub Pages selesai: ${out}/`);

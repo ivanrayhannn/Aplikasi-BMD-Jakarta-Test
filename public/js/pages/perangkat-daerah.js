@@ -121,7 +121,7 @@ export const PerangkatDaerahForm = {
     <PageHeader :title="id ? 'Ubah Perangkat Daerah' : 'Tambah Perangkat Daerah'" :back="id ? '#/perangkat-daerah/' + id : '#/perangkat-daerah'" />
     <div v-if="state.message" class="alert error" role="alert">{{ state.message }}</div>
     <div class="card"><div class="form">
-      <Field label="Kode" name="kode" :error="errors.kode" required hint="Contoh: PD-004"><input id="kode" v-model="values.kode" maxlength="20"></Field>
+      <Field label="Kode" name="kode" :error="errors.kode" required hint="Contoh: SKPD-37"><input id="kode" v-model="values.kode" maxlength="20"></Field>
       <Field label="Nama dinas" name="nama_dinas" :error="errors.nama_dinas" required><input id="nama_dinas" v-model="values.nama_dinas" maxlength="150"></Field>
       <Field label="Singkatan" name="singkatan" :error="errors.singkatan"><input id="singkatan" v-model="values.singkatan" maxlength="30"></Field>
       <Field label="Telepon" name="no_telepon" :error="errors.no_telepon"><input id="no_telepon" v-model="values.no_telepon" inputmode="tel"></Field>

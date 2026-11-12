@@ -13,6 +13,7 @@ import { PemakaianPage } from './pages/pemakaian.js';
 import { PerawatanPage } from './pages/perawatan.js';
 import { LaporanPage } from './pages/laporan.js';
 import { LoginPage, ForbiddenPage, PenggunaPage, PengaturanPage, LogPage } from './pages/admin.js';
+import { RancanganDbPage } from './pages/rancangan-db.js';
 
 // Urutan penting: pola statis ('/kdo/baru') sebelum pola berparameter ('/kdo/:id').
 defineRoute('/dashboard', Dashboard, { section: 'dashboard' });
@@ -34,11 +35,13 @@ defineRoute('/laporan', LaporanPage, { section: 'laporan' });
 defineRoute('/pengguna', PenggunaPage, { section: 'pengguna', admin: true });
 defineRoute('/pengaturan', PengaturanPage, { section: 'pengaturan', admin: true });
 defineRoute('/log', LogPage, { section: 'log', admin: true });
+defineRoute('/rancangan-db', RancanganDbPage, { section: 'rancangan' });
 
 const MENU = [
   { group: null, items: [['dashboard', '#/dashboard', 'Dashboard']] },
   { group: 'Data Master', items: [['kdo', '#/kdo', 'Kendaraan Dinas'], ['pns', '#/pns', 'PNS'], ['pd', '#/perangkat-daerah', 'Perangkat Daerah']] },
   { group: 'Operasional', items: [['pemakaian', '#/pemakaian', 'Pemakai Kendaraan'], ['perawatan', '#/perawatan', 'Riwayat Perawatan'], ['laporan', '#/laporan', 'Laporan & Cetak']] },
+  { group: 'Dokumentasi', items: [['rancangan', '#/rancangan-db', 'Rancangan Database']] },
   { group: 'Administrasi', admin: true, items: [['pengguna', '#/pengguna', 'Kelola Pengguna'], ['pengaturan', '#/pengaturan', 'Pengaturan'], ['log', '#/log', 'Log Aktivitas']] },
 ];
 
@@ -91,7 +94,7 @@ const App = {
         </footer>
       </div>
       <main>
-        <p v-if="SAMPLE" class="sample-banner no-print">Mode data contoh: pegawai, kendaraan, dan riwayat yang tampil adalah data fiktif untuk uji coba, bukan data aset sebenarnya.<template v-if="DEMO"> Versi demo ini menyimpan perubahan di browser Anda saja.</template></p>
+        <p v-if="SAMPLE" class="sample-banner no-print">Lingkungan uji (UAT): data pegawai dan kendaraan berasal dari data uji, bukan catatan aset resmi.<template v-if="DEMO"> Perubahan pada versi demo hanya tersimpan di browser ini.</template></p>
         <component v-if="page" :is="page" :key="pageKey" />
       </main>
     </div>

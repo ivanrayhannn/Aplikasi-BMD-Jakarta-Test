@@ -6,8 +6,9 @@ import {
   STATUS_KEPEGAWAIAN, JENIS_PERAWATAN, STATUS_PEMAKAIAN, PERAN, values,
 } from '../shared/enums.js';
 import { transaction } from './db.js';
+import { SKPD, PEGAWAI, KENDARAAN } from './seed-data.js';
 
-export const SCHEMA_VERSION = 2;
+export const SCHEMA_VERSION = 3;
 
 /** ENUM MySQL ditiru dengan CHECK constraint yang dibangkitkan dari shared/enums.js. */
 const check = (column, opts, nullable = false) =>
@@ -54,7 +55,7 @@ CREATE TABLE IF NOT EXISTS kdo (
   kondisi             TEXT NOT NULL DEFAULT 'baik' ${check('kondisi', KONDISI)},
   jenis_kendaraan     TEXT NOT NULL ${check('jenis_kendaraan', JENIS_KENDARAAN)},
   nomor_rangka        TEXT NOT NULL UNIQUE COLLATE NOCASE,
-  nomor_mesin         TEXT NOT NULL UNIQUE COLLATE NOCASE,
+  nomor_mesin         TEXT UNIQUE COLLATE NOCASE,
   isi_silinder_cc     INTEGER CHECK (isi_silinder_cc IS NULL OR isi_silinder_cc >= 0),
   bahan_bakar         TEXT ${check('bahan_bakar', BAHAN_BAKAR, true)},
   nomor_bpkb          TEXT,
@@ -152,8 +153,8 @@ CREATE TABLE IF NOT EXISTS log_aktivitas (
 
 /**
  * Membuat tabel dan mengisi data awal bila database masih kosong.
- * Data wajib (PRD): pengaturan, PD-001 s.d. PD-003, dan satu akun admin.
- * Data contoh fiktif (PNS, kendaraan, riwayat, akun petugas) hanya dibuat bila `sampleData` true.
+ * Data wajib: pengaturan, 36 perangkat daerah (SKPD), dan satu akun admin.
+ * Data uji (pegawai, kendaraan, pemakaian, akun petugas) dari docs/data hanya dibuat bila `sampleData` true.
  * @param {*} db koneksi dengan API exec/prepare
  * @param {(password: string) => string} hashPassword
  * @param {{ sampleData?: boolean }} [options]
@@ -162,8 +163,9 @@ export function initDatabase(db, hashPassword, { sampleData = true } = {}) {
   db.exec('PRAGMA foreign_keys = ON;');
   const version = db.prepare('PRAGMA user_version').get()?.user_version ?? 0;
   if (version !== 0 && version !== SCHEMA_VERSION) {
-    // Database dari versi sebelum PRD belum berisi data produksi, jadi dibuat ulang.
-    for (const t of ['log_aktivitas', 'sesi', 'penanggung_jawab', 'pemeriksaan_kondisi', 'kendaraan', 'pegawai', 'pengguna', 'perangkat_daerah']) {
+    // Belum ada data produksi; database versi lama dibuat ulang dengan skema dan data awal terbaru.
+    for (const t of ['log_aktivitas', 'sessions', 'settings', 'kdo_perawatan', 'kdo_pemakaian', 'users', 'kdo', 'pns', 'perangkat_daerah',
+      'sesi', 'penanggung_jawab', 'pemeriksaan_kondisi', 'kendaraan', 'pegawai', 'pengguna']) {
       db.exec(`DROP TABLE IF EXISTS ${t}`);
     }
   }
@@ -178,72 +180,45 @@ export function initDatabase(db, hashPassword, { sampleData = true } = {}) {
   }
 }
 
-/** True bila database berisi data contoh fiktif (ditandai di UI agar tidak dikira data asli). */
+/** True bila database berisi data uji (ditandai di UI sebagai lingkungan uji). */
 export function hasSampleData(db) {
   return Boolean(db.prepare("SELECT 1 FROM users WHERE email = 'petugas@kdo.test'").get());
 }
-
-const isoDate = (offsetDays) => {
-  const d = new Date();
-  d.setDate(d.getDate() + offsetDays);
-  return new Date(d.getTime() - d.getTimezoneOffset() * 60_000).toISOString().slice(0, 10);
-};
 
 function seedRequired(db, hashPassword) {
   // Alamat dan logo sengaja dikosongkan: diisi admin di menu Pengaturan.
   db.prepare('INSERT INTO settings (id, nama_instansi) VALUES (1, ?)').run('Instansi Aset Daerah Jakarta');
   const pd = db.prepare('INSERT INTO perangkat_daerah (kode, nama_dinas, singkatan) VALUES (?,?,?)');
-  pd.run('PD-001', 'Dinas Pendidikan', 'DISDIK');
-  pd.run('PD-002', 'Dinas Kesehatan', 'DINKES');
-  pd.run('PD-003', 'Dinas PUPR', 'PUPR');
+  for (const s of SKPD) pd.run(s.kode, s.nama_dinas, s.singkatan);
   db.prepare('INSERT INTO users (nama, email, password_hash, role) VALUES (?,?,?,?)')
-    .run('Administrator Aset', 'admin@kdo.test', hashPassword('admin12345'), 'admin');
+    .run('Pengelola Aset', 'admin@kdo.test', hashPassword('admin12345'), 'admin');
 }
 
-/** Data contoh fiktif untuk uji coba. Tanggal relatif terhadap hari ini agar pengingat dashboard selalu terisi. */
+/** Data uji pegawai dan kendaraan dari pemilik produk (src/api/seed-data.js). */
 function seedSample(db, hashPassword) {
-  const pdId = (kode) => db.prepare('SELECT id FROM perangkat_daerah WHERE kode = ?').get(kode).id;
-  const [disdik, dinkes, pupr] = ['PD-001', 'PD-002', 'PD-003'].map(pdId);
+  const pdBySingkatan = new Map(db.prepare('SELECT id, singkatan FROM perangkat_daerah').all().map((r) => [r.singkatan, r.id]));
 
-  const pns = db.prepare(`INSERT INTO pns (nip, nama_pegawai, jabatan, golongan, pangkat, perangkat_daerah_id, jenis_kelamin, status_kepegawaian)
-    VALUES (?,?,?,?,?,?,?,?)`);
-  const budi = pns.run('197801012005011001', 'Budi Santoso', 'Kepala Bidang Sarana Prasarana', 'IV/a', 'Pembina', disdik, 'L', 'aktif').lastInsertRowid;
-  pns.run('198505152010012002', 'Siti Rahmawati', 'Kepala Seksi Perlengkapan', 'III/d', 'Penata Tingkat I', disdik, 'P', 'aktif');
-  const andi = pns.run('197907202006041003', 'dr. Andi Wijaya', 'Kepala Bidang Pelayanan Kesehatan', 'IV/b', 'Pembina Tingkat I', dinkes, 'L', 'aktif').lastInsertRowid;
-  const rina = pns.run('199001012015032004', 'Rina Kusuma', 'Pengurus Barang', 'III/b', 'Penata Muda Tingkat I', pupr, 'P', 'aktif').lastInsertRowid;
-  pns.run('196205101985031005', 'Hendra Gunawan', 'Pengemudi', 'II/d', 'Pengatur Tingkat I', pupr, 'L', 'pensiun');
+  const pns = db.prepare(`INSERT INTO pns (nip, nama_pegawai, jabatan, golongan, perangkat_daerah_id, jenis_kelamin)
+    VALUES (?,?,?,?,?,?)`);
+  const pnsByNip = new Map();
+  for (const p of PEGAWAI) {
+    const id = pns.run(p.nip, p.nama_pegawai, p.jabatan, p.golongan, pdBySingkatan.get(p.skpd), p.jenis_kelamin).lastInsertRowid;
+    pnsByNip.set(p.nip, { id, ...p });
+  }
 
-  const kdo = db.prepare(`INSERT INTO kdo (nomor_polisi, merek, tipe, tahun_produksi, warna, kondisi, jenis_kendaraan, nomor_rangka, nomor_mesin,
-    isi_silinder_cc, bahan_bakar, nomor_bpkb, masa_berlaku_stnk, tanggal_pajak, tanggal_perolehan, nilai_perolehan, kode_barang_aset,
-    perangkat_daerah_id, created_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?, datetime('now', ?))`);
-  const k1 = kdo.run('B 1234 PQR', 'Toyota', 'Kijang Innova 2.0 G', 2021, 'Hitam', 'baik', 'roda_4', 'CONTOH0000000001', 'CONTOHM0001',
-    1998, 'bensin', 'CONTOH-BPKB-01', isoDate(240), isoDate(240), '2021-03-15', 385_000_000, '1.3.2.02.01.01.003', disdik, '-60 days').lastInsertRowid;
-  const k2 = kdo.run('B 3456 PQR', 'Honda', 'Vario 125', 2019, 'Merah', 'rusak_ringan', 'roda_2', 'CONTOH0000000002', 'CONTOHM0002',
-    125, 'bensin', 'CONTOH-BPKB-02', isoDate(20), isoDate(20), '2019-07-01', 22_000_000, '1.3.2.02.01.04.001', disdik, '-45 days').lastInsertRowid;
-  const k3 = kdo.run('B 7788 DKS', 'Mitsubishi', 'Xpander Ultimate', 2022, 'Putih', 'baik', 'roda_4', 'CONTOH0000000003', 'CONTOHM0003',
-    1499, 'bensin', 'CONTOH-BPKB-03', isoDate(300), isoDate(300), '2022-08-20', 320_000_000, '1.3.2.02.01.01.003', dinkes, '-30 days').lastInsertRowid;
-  const k4 = kdo.run('B 9012 PUR', 'Isuzu', 'Elf NMR 71', 2018, 'Kuning', 'rusak_berat', 'truk', 'CONTOH0000000004', 'CONTOHM0004',
-    4570, 'solar', 'CONTOH-BPKB-04', isoDate(-10), isoDate(-10), '2018-02-12', 410_000_000, '1.3.2.02.01.03.002', pupr, '-20 days').lastInsertRowid;
-  kdo.run('B 2468 PUR', 'Toyota', 'Hiace Commuter', 2023, 'Silver', 'baik', 'bus', 'CONTOH0000000005', 'CONTOHM0005',
-    2494, 'solar', 'CONTOH-BPKB-05', isoDate(400), isoDate(400), '2023-05-05', 590_000_000, '1.3.2.02.01.02.001', pupr, '-2 days');
+  const kdo = db.prepare(`INSERT INTO kdo (kode_barang_aset, nomor_polisi, merek, tipe, jenis_kendaraan, tahun_produksi, nomor_rangka,
+    kondisi, nilai_perolehan, keterangan, perangkat_daerah_id, pemegang_pns_id) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`);
+  // Sumber tidak memuat tanggal penugasan, jadi pemakaian aktif dicatat sejak data dimuat.
+  const pakai = db.prepare(`INSERT INTO kdo_pemakaian (kdo_id, pns_id, pns_nama, pns_nip, tanggal_mulai, status, keterangan)
+    VALUES (?,?,?,?,date('now','localtime'),'aktif','Penetapan pemegang dari data awal')`);
+  for (const k of KENDARAAN) {
+    const pemegang = pnsByNip.get(k.pemegang_nip);
+    const id = kdo.run(k.kode_barang_aset, k.nomor_polisi, k.merek, k.tipe, k.jenis_kendaraan, k.tahun_produksi, k.nomor_rangka,
+      k.kondisi, k.nilai_perolehan, k.keterangan, pdBySingkatan.get(k.skpd), pemegang.id).lastInsertRowid;
+    pakai.run(id, pemegang.id, pemegang.nama_pegawai, pemegang.nip);
+  }
 
-  const pakai = db.prepare(`INSERT INTO kdo_pemakaian (kdo_id, pns_id, pns_nama, pns_nip, tanggal_mulai, tanggal_selesai, status, keterangan)
-    VALUES (?,?,?,?,?,?,?,?)`);
-  pakai.run(k1, budi, 'Budi Santoso', '197801012005011001', isoDate(-400), isoDate(-120), 'selesai', 'Operasional bidang sarpras');
-  pakai.run(k1, budi, 'Budi Santoso', '197801012005011001', isoDate(-90), null, 'aktif', 'Operasional bidang sarpras');
-  pakai.run(k3, andi, 'dr. Andi Wijaya', '197907202006041003', isoDate(-200), null, 'aktif', 'Operasional pelayanan kesehatan');
-  pakai.run(k4, rina, 'Rina Kusuma', '199001012015032004', isoDate(-500), isoDate(-30), 'selesai', 'Angkutan material');
-  db.prepare('UPDATE kdo SET pemegang_pns_id = ? WHERE id = ?').run(budi, k1);
-  db.prepare('UPDATE kdo SET pemegang_pns_id = ? WHERE id = ?').run(andi, k3);
-
-  const rawat = db.prepare(`INSERT INTO kdo_perawatan (kdo_id, tanggal_servis, jenis_perawatan, deskripsi, bengkel, biaya, kondisi_setelah, jadwal_berikutnya)
-    VALUES (?,?,?,?,?,?,?,?)`);
-  rawat.run(k1, isoDate(-170), 'rutin', 'Servis berkala 40.000 km', 'Bengkel rekanan A', 1_850_000, 'baik', isoDate(10));
-  rawat.run(k1, isoDate(-60), 'ganti_oli', 'Ganti oli mesin dan filter', 'Bengkel rekanan A', 650_000, 'baik', isoDate(5));
-  rawat.run(k2, isoDate(-40), 'perbaikan', 'Kampas rem aus, perlu penggantian', 'Bengkel rekanan B', 350_000, 'rusak_ringan', isoDate(-3));
-  rawat.run(k3, isoDate(-25), 'rutin', 'Servis berkala 20.000 km', 'Bengkel rekanan C', 1_250_000, 'baik', isoDate(155));
-  rawat.run(k4, isoDate(-15), 'perbaikan', 'Mesin turun, menunggu anggaran overhaul', 'Bengkel rekanan D', 2_400_000, 'rusak_berat', null);
-
+  const putri = pnsByNip.get('199404302019032008');
   db.prepare('INSERT INTO users (nama, email, password_hash, role, pns_id) VALUES (?,?,?,?,?)')
-    .run('Petugas Lapangan', 'petugas@kdo.test', hashPassword('petugas12345'), 'petugas', rina);
+    .run(putri.nama_pegawai, 'petugas@kdo.test', hashPassword('petugas12345'), 'petugas', putri.id);
 }

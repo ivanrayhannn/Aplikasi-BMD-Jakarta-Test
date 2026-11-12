@@ -3,7 +3,7 @@ import { createApp } from './app.js';
 
 const port = Number(process.env.PORT ?? 3000);
 const dbFile = process.env.DB_FILE ?? 'data/kdo.db';
-// SEED_SAMPLE=0 untuk produksi: database baru hanya berisi data wajib (PD-001 s.d. PD-003 dan akun admin).
+// SEED_SAMPLE=0 untuk produksi: database baru hanya berisi data wajib (36 SKPD dan akun admin).
 const sampleData = process.env.SEED_SAMPLE !== '0';
 
 createApp(openDatabase(dbFile, { sampleData })).listen(port, () => {

@@ -22,12 +22,13 @@ export function createApp(db) {
   const app = express();
   app.disable('x-powered-by');
   app.use(express.json({ limit: '1mb' })); // cukup untuk logo instansi (maks. 300 KB)
-  // Menggantikan public/config.js: memberi tahu UI bila database berisi data contoh fiktif.
+  // Menggantikan public/config.js: memberi tahu UI bila database berisi data uji.
   app.get('/config.js', (req, res) => {
     res.type('text/javascript').send(`export default ${JSON.stringify({ mode: 'server', sampleData: hasSampleData(db) })};\n`);
   });
   app.use(express.static(join(ROOT, 'public')));
   app.use('/lib/shared', express.static(join(ROOT, 'src/shared')));
+  app.use('/db', express.static(join(ROOT, 'db/mysql'))); // unduhan DDL di menu Rancangan Database
   app.get('/vendor/:file', (req, res, next) => {
     const path = VENDOR[req.params.file];
     if (!path) return next();

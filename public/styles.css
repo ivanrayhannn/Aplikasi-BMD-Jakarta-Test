@@ -220,6 +220,23 @@ dl.kv dd { margin: 0; font-weight: 500; min-width: 0; overflow-wrap: anywhere; }
 .signature p { margin: 2px 0; }
 .signature .sign-space { height: 56px; }
 
+/* Rancangan Database */
+.erd-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: 6px; background: var(--surface-2); }
+.erd { display: block; width: 100%; min-width: 820px; height: auto; }
+.erd-title { font: 600 13px system-ui, sans-serif; fill: #fff; }
+.erd-key { font: 600 11px system-ui, sans-serif; fill: var(--muted); }
+.erd-col { font: 12px ui-monospace, Consolas, monospace; fill: var(--text); }
+.erd-more { font: italic 11.5px system-ui, sans-serif; fill: var(--muted); }
+.erd-label { font: 600 11px system-ui, sans-serif; fill: var(--text); paint-order: stroke; stroke: var(--surface-2); stroke-width: 4px; }
+.erd-legend { display: flex; flex-wrap: wrap; gap: 8px 18px; font-size: 13px; color: var(--muted); margin-bottom: 10px; }
+.erd-legend i { display: inline-block; width: 12px; height: 12px; border-radius: 2px; margin-right: 6px; vertical-align: -1px; }
+.rules { margin: 6px 0 0; padding-left: 20px; }
+.rules li { margin-bottom: 4px; }
+details.dict summary { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 10px; font-weight: 600; min-height: 32px; }
+details.dict summary .sub { flex-basis: 100%; font-weight: 400; }
+details.dict[open] summary { margin-bottom: 10px; }
+code.type { font-size: 12px; overflow-wrap: anywhere; }
+
 @media (prefers-reduced-motion: no-preference) {
   .report-sheet { transition: opacity .15s; }
 }

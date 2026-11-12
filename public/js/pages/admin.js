@@ -26,7 +26,7 @@ export const LoginPage = {
     <Field label="Kata sandi" name="password" :error="errors.password"><input id="password" type="password" v-model="values.password" autocomplete="current-password"></Field>
     <button class="primary block" :disabled="state.busy">{{ state.busy ? 'Memproses…' : 'Masuk' }}</button>
     <div v-if="SAMPLE" class="demo-accounts">
-      <b>Akun uji coba (data contoh fiktif)</b>
+      <b>Akun uji coba (lingkungan UAT)</b>
       <div>admin@kdo.test, sandi admin12345 (Pengelola Aset)</div>
       <div>petugas@kdo.test, sandi petugas12345 (Petugas Lapangan, hanya melihat)</div>
       <div v-if="DEMO">Versi demo: perubahan hanya tersimpan di browser ini.</div>

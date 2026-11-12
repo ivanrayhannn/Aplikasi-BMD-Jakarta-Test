@@ -2,7 +2,7 @@
 import config from '../config.js';
 
 export const DEMO = config.mode === 'demo';
-/** Database berisi data contoh fiktif: ditandai di UI agar tidak dikira data asli. */
+/** Database berisi data uji: ditandai di UI sebagai lingkungan UAT. */
 export const SAMPLE = Boolean(config.sampleData);
 const demo = DEMO ? await import('../demo-backend.js') : null;
 

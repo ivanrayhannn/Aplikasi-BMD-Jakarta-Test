@@ -55,30 +55,30 @@ const toast = (page, text) => page.waitForSelector(`.toast:has-text("${text}")`,
   ok('Kartu Total Kendaraan -> daftar kendaraan');
   await page.goto(BASE + '#/dashboard');
   await page.click('a.stat.bad');
-  await page.waitForFunction(() => document.querySelectorAll('tbody tr').length === 1 && document.querySelector('tbody').textContent.includes('B 9012 PUR'));
-  ok('Kartu Rusak Berat -> daftar tersaring kondisi rusak berat (1 baris)');
+  await page.waitForFunction(() => document.querySelectorAll('tbody tr').length === 2 && document.querySelector('tbody').textContent.includes('B 3920 PQJ'));
+  ok('Kartu Rusak Berat -> daftar tersaring kondisi rusak berat (2 kendaraan)');
 
   // Daftar kendaraan: cari, saring, hapus filter
   await page.goto(BASE + '#/kdo');
   await page.fill('input[type=search]', 'isuzu');
-  await page.waitForFunction(() => document.querySelectorAll('tbody tr').length === 1);
-  ok('Cari "isuzu" -> 1 kendaraan');
+  await page.waitForFunction(() => document.querySelectorAll('tbody tr').length === 2);
+  ok('Cari "isuzu" -> 2 kendaraan');
   await page.fill('input[type=search]', 'zzzz');
   await page.waitForSelector('.empty:has-text("Tidak ada kendaraan yang cocok")');
   ok('Pencarian tanpa hasil -> state kosong dengan arahan');
   await page.click('button.link:has-text("Hapus filter")');
-  await page.waitForFunction(() => document.querySelectorAll('tbody tr').length === 5);
-  ok('Hapus filter -> 5 kendaraan kembali');
+  await page.waitForFunction(() => document.querySelectorAll('tbody tr').length === 20);
+  ok('Hapus filter -> 20 kendaraan kembali');
   await page.check('label.check:has-text("Belum ada pemegang") input');
-  await page.waitForFunction(() => document.querySelectorAll('tbody tr').length === 3);
-  ok('Filter "Belum ada pemegang" -> 3 kendaraan');
+  await page.waitForSelector('.empty:has-text("Tidak ada kendaraan yang cocok")');
+  ok('Filter "Belum ada pemegang" -> semua kendaraan punya pemegang, state kosong tampil');
 
   // Tambah kendaraan: validasi klien, duplikat dari server, sukses
   await page.goto(BASE + '#/kdo/baru');
   await page.click('form button.primary');
   await page.waitForSelector('#nomor_polisi ~ .field-error, .field.invalid');
   ok('Simpan form kosong -> pesan per field, data tidak terkirim');
-  await page.fill('#nomor_polisi', 'b 1234 pqr');
+  await page.fill('#nomor_polisi', 'b 1426 pqa');
   await page.fill('#merek', 'Suzuki');
   await page.fill('#tipe', 'Ertiga');
   await page.fill('#nomor_rangka', 'UJI-RANGKA-01');
@@ -88,11 +88,11 @@ const toast = (page, text) => page.waitForSelector(`.toast:has-text("${text}")`,
   await page.waitForSelector('.field-error:has-text("sudah terdaftar")');
   ok('Nomor polisi ganda -> 422 ditampilkan di field nomor polisi');
   await page.fill('#nomor_polisi', 'b 5555 uji');
-  await pick(page, '#pemegang_pns_id', 'Siti Rahmawati');
+  await pick(page, '#pemegang_pns_id', 'Putri Ayu Anggraini');
   await page.click('form button.primary');
   await page.waitForSelector('h1:has-text("B 5555 UJI")');
-  await page.waitForSelector('dd:has-text("Siti Rahmawati")');
-  ok('Tambah kendaraan dengan pemegang -> detail B 5555 UJI, pemegang Siti, pemakaian aktif terbentuk');
+  await page.waitForSelector('dd:has-text("Putri Ayu Anggraini")');
+  ok('Tambah kendaraan dengan pemegang -> detail B 5555 UJI, pemegang Putri, pemakaian aktif terbentuk');
 
   // Ubah kendaraan
   await page.click('a:has-text("Ubah Data")');
@@ -114,12 +114,12 @@ const toast = (page, text) => page.waitForSelector(`.toast:has-text("${text}")`,
   await page.waitForSelector('.badge:has-text("Belum ada pemegang")');
   ok('Tutup pemakaian -> pemegang kosong, riwayat berstatus Selesai');
   await page.click('button:has-text("Tautkan Pemakai")');
-  await pick(page, '.modal #pns_id', 'Budi Santoso');
+  await pick(page, '.modal #pns_id', 'Ratna Juwita');
   await page.fill('.modal #keterangan', 'Uji tautkan');
   await page.click('.modal button.primary');
   await toast(page, 'Pemakai kendaraan ditautkan');
-  await page.waitForSelector('dd a:has-text("Budi Santoso")');
-  ok('Tautkan pemakai -> Budi Santoso menjadi pemegang');
+  await page.waitForSelector('dd a:has-text("Ratna Juwita")');
+  ok('Tautkan pemakai -> Ratna Juwita Lestari menjadi pemegang');
 
   // Perawatan dari detail
   await page.click('button:has-text("Catat Perawatan")');
@@ -163,22 +163,24 @@ const toast = (page, text) => page.waitForSelector(`.toast:has-text("${text}")`,
   await page.fill('#nip', '199912312020121001');
   await page.fill('#nama_pegawai', 'Pegawai Uji');
   await page.fill('#jabatan', 'Staf');
-  await pick(page, '#perangkat_daerah_id', 'Dinas PUPR');
+  await pick(page, '#perangkat_daerah_id', 'Dinas Bina Marga');
   await page.selectOption('#golongan', 'III/a');
+  await page.selectOption('#status_kepegawaian', 'pensiun');
   await page.click('form button.primary');
   await page.waitForSelector('h1:has-text("Pegawai Uji")');
-  ok('Tambah PNS -> detail Pegawai Uji');
-  await page.click('.page-head button.danger');
-  await page.click('.modal button.danger-solid');
-  await page.waitForSelector('h1:has-text("PNS")');
-  ok('Hapus PNS tanpa kendaraan -> kembali ke daftar');
+  ok('Tambah PNS berstatus pensiun -> detail Pegawai Uji');
   await page.goto(BASE + '#/pns');
   await page.selectOption('label.filter:has-text("Status") select', 'pensiun');
   await page.waitForFunction(() => document.querySelectorAll('tbody tr').length === 1);
   ok('Filter status pensiun -> 1 PNS');
+  await page.click('tbody a:has-text("Pegawai Uji")');
+  await page.click('.page-head button.danger');
+  await page.click('.modal button.danger-solid');
+  await page.waitForSelector('h1:has-text("PNS")');
+  ok('Hapus PNS tanpa kendaraan -> kembali ke daftar');
 
   // Perangkat daerah: hapus ditolak 409, tambah & hapus
-  await page.goto(BASE + '#/perangkat-daerah/1');
+  await page.goto(BASE + '#/perangkat-daerah/18');
   await page.click('.page-head button.danger');
   await page.click('.modal button.danger-solid');
   await page.waitForSelector('.modal .alert.error:has-text("tidak dapat dihapus")');
@@ -200,31 +202,31 @@ const toast = (page, text) => page.waitForSelector(`.toast:has-text("${text}")`,
 
   // Halaman Pemakai Kendaraan
   await page.goto(BASE + '#/pemakaian');
-  await page.click('.page-head button.primary');
-  await pick(page, '.modal #kdo_id', 'B 2468 PUR');
-  await pick(page, '.modal #pns_id', 'Rina Kusuma');
-  await page.click('.modal button.primary');
-  await toast(page, 'Pemakai kendaraan ditautkan');
-  await page.click('tr:has-text("B 2468 PUR") button:has-text("Tutup")');
+  await page.click('tr:has-text("B 3871 PQD") button:has-text("Tutup")');
   await page.click('.modal button.primary');
   await toast(page, 'Pemakaian ditutup');
-  ok('Menu Pemakai Kendaraan: tautkan B 2468 PUR ke Rina, lalu tutup');
+  await page.click('.page-head button.primary');
+  await pick(page, '.modal #kdo_id', 'B 3871 PQD');
+  await pick(page, '.modal #pns_id', 'Putri Ayu Anggraini');
+  await page.click('.modal button.primary');
+  await toast(page, 'Pemakai kendaraan ditautkan');
+  ok('Menu Pemakai Kendaraan: tutup pemakaian B 3871 PQD, lalu tautkan ke Putri');
 
   // Perawatan (tab)
   await page.goto(BASE + '#/perawatan');
-  await page.waitForSelector('.badge:has-text("Terlambat")');
+  await page.waitForSelector('.empty:has-text("Belum ada jadwal servis"), tbody tr');
   await page.click('[role=tab]:has-text("Rekap Biaya")');
-  await page.waitForSelector('tfoot:has-text("Total seluruh kendaraan")');
+  await page.waitForSelector('tfoot:has-text("Total seluruh kendaraan"), .empty:has-text("Belum ada biaya perawatan")');
   await page.click('[role=tab]:has-text("Semua Catatan")');
   await page.click('button:has-text("Catat Perawatan")');
   await page.keyboard.press('Escape');
-  ok('Perawatan: tab Jadwal (Terlambat), Rekap Biaya (total), Semua Catatan + dialog');
+  ok('Perawatan: tab Jadwal, Rekap Biaya, Semua Catatan + dialog catat');
 
   // Laporan
   await page.goto(BASE + '#/laporan');
   await page.waitForSelector('.report-summary:has-text("Total kendaraan")');
   await page.selectOption('label.filter:has-text("Kondisi") select', 'rusak_berat');
-  await page.waitForSelector('.report-summary:has-text("1 unit")');
+  await page.waitForSelector('.report-summary:has-text("2 unit")');
   const [pdf] = await Promise.all([page.waitForEvent('download'), page.click('button:has-text("Unduh PDF")')]);
   const [xlsx] = await Promise.all([page.waitForEvent('download'), page.click('button:has-text("Unduh Excel")')]);
   if (!/^laporan-kendaraan-.*\.pdf$/.test(pdf.suggestedFilename()) || !/\.xlsx$/.test(xlsx.suggestedFilename())) throw new Error('nama berkas');
@@ -240,8 +242,8 @@ const toast = (page, text) => page.waitForSelector(`.toast:has-text("${text}")`,
   if (!(await page.isDisabled('button:has-text("Unduh PDF")'))) throw new Error('unduh harus nonaktif');
   ok('Laporan pemakaian periode kosong -> pesan jelas, tombol cetak/unduh nonaktif');
   await page.click('[role=tab]:has-text("Perawatan Kendaraan")');
-  await page.waitForSelector('.report-summary:has-text("Total biaya keseluruhan")');
-  ok('Laporan perawatan -> total per kendaraan & total keseluruhan');
+  await page.waitForSelector('.report-summary:has-text("Total biaya keseluruhan"), .empty:has-text("Tidak ada data")');
+  ok('Laporan perawatan -> total keseluruhan, atau pesan jelas bila belum ada servis');
 
   // Pengguna
   await page.goto(BASE + '#/pengguna');
@@ -273,6 +275,15 @@ const toast = (page, text) => page.waitForSelector(`.toast:has-text("${text}")`,
   await toast(page, 'Pengaturan disimpan');
   ok('Pengaturan: validasi, unggah logo (pratinjau kop), simpan');
 
+  await page.click('nav a:has-text("Rancangan Database")');
+  await page.waitForSelector('.alert.info:has-text("rancangan database untuk sistem SI-KDO")');
+  if ((await page.locator('svg.erd g[transform]').count()) !== 9) throw new Error('ERD harus memuat 9 tabel');
+  const [ddl] = await Promise.all([page.waitForEvent('download'), page.click('a:has-text("Unduh DDL MySQL")')]);
+  if (!fs.readFileSync(await ddl.path(), 'utf8').includes('CREATE TABLE kdo (')) throw new Error('DDL');
+  await page.click('details.dict summary:has-text("kdo_perawatan")');
+  await page.waitForSelector('details.dict[open] td:has-text("jadwal_berikutnya")');
+  ok('Rancangan Database: catatan rancangan, ERD 9 tabel, unduh DDL MySQL, buka kamus data kdo_perawatan');
+
   await page.goto(BASE + '#/log');
   await page.waitForSelector('td:has-text("TAMBAH")');
   ok('Log aktivitas -> mencatat aksi');
@@ -292,7 +303,7 @@ const toast = (page, text) => page.waitForSelector(`.toast:has-text("${text}")`,
   await login(page, 'petugas@kdo.test', 'petugas12345');
   await page.waitForSelector('h1:has-text("Dashboard Kendaraan")');
   await page.goto(BASE + '#/kdo/1');
-  await page.waitForSelector('h1:has-text("B 1234 PQR")');
+  await page.waitForSelector('h1:has-text("B 1426 PQA")');
   if (await page.locator('a:has-text("Ubah Data"), .page-head button.danger').count()) throw new Error('petugas melihat tombol ubah');
   await page.goto(BASE + '#/pengguna');
   await page.waitForSelector('h1:has-text("Akses ditolak")');

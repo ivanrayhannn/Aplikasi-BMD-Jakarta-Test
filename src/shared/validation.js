@@ -115,7 +115,7 @@ export const schemas = {
     kondisi: oneOf('Kondisi', KONDISI, { fallback: 'baik' }),
     jenis_kendaraan: oneOf('Jenis kendaraan', JENIS_KENDARAAN, { required: true }),
     nomor_rangka: text('Nomor rangka', { required: true, max: 30, transform: (s) => s.toUpperCase() }),
-    nomor_mesin: text('Nomor mesin', { required: true, max: 30, transform: (s) => s.toUpperCase() }),
+    nomor_mesin: text('Nomor mesin', { max: 30, transform: (s) => s.toUpperCase() }),
     isi_silinder_cc: integer('Isi silinder', { min: 0, max: 100_000 }),
     bahan_bakar: oneOf('Bahan bakar', BAHAN_BAKAR),
     nomor_bpkb: text('Nomor BPKB', { max: 30, transform: (s) => s.toUpperCase() }),
