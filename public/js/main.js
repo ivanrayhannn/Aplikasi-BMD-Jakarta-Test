@@ -43,8 +43,8 @@ const MENU = [
   { group: null, items: [['dashboard', '#/dashboard', 'Dashboard']] },
   { group: 'Data Master', items: [['kdo', '#/kdo', 'Kendaraan Dinas'], ['pns', '#/pns', 'PNS'], ['pd', '#/perangkat-daerah', 'Perangkat Daerah']] },
   { group: 'Operasional', items: [['pemakaian', '#/pemakaian', 'Pemakai Kendaraan'], ['perawatan', '#/perawatan', 'Riwayat Perawatan'], ['laporan', '#/laporan', 'Laporan & Cetak']] },
-  { group: 'Dokumentasi', items: [['rancangan', '#/rancangan-db', 'Rancangan Database'], ['dokumen', '#/dokumen', 'Dokumen']] },
   { group: 'Administrasi', admin: true, items: [['pengguna', '#/pengguna', 'Kelola Pengguna'], ['pengaturan', '#/pengaturan', 'Pengaturan'], ['log', '#/log', 'Log Aktivitas']] },
+  { group: 'SYSTEM DOCUMENTATION', items: [['rancangan', '#/rancangan-db', 'Rancangan Database'], ['dokumen', '#/dokumen', 'Dokumen']] },
 ];
 
 const App = {
