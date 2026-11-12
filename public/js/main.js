@@ -14,6 +14,7 @@ import { PerawatanPage } from './pages/perawatan.js';
 import { LaporanPage } from './pages/laporan.js';
 import { LoginPage, ForbiddenPage, PenggunaPage, PengaturanPage, LogPage } from './pages/admin.js';
 import { RancanganDbPage } from './pages/rancangan-db.js';
+import { DokumenPage } from './pages/dokumen.js';
 
 // Urutan penting: pola statis ('/kdo/baru') sebelum pola berparameter ('/kdo/:id').
 defineRoute('/dashboard', Dashboard, { section: 'dashboard' });
@@ -36,12 +37,13 @@ defineRoute('/pengguna', PenggunaPage, { section: 'pengguna', admin: true });
 defineRoute('/pengaturan', PengaturanPage, { section: 'pengaturan', admin: true });
 defineRoute('/log', LogPage, { section: 'log', admin: true });
 defineRoute('/rancangan-db', RancanganDbPage, { section: 'rancangan' });
+defineRoute('/dokumen', DokumenPage, { section: 'dokumen' });
 
 const MENU = [
   { group: null, items: [['dashboard', '#/dashboard', 'Dashboard']] },
   { group: 'Data Master', items: [['kdo', '#/kdo', 'Kendaraan Dinas'], ['pns', '#/pns', 'PNS'], ['pd', '#/perangkat-daerah', 'Perangkat Daerah']] },
   { group: 'Operasional', items: [['pemakaian', '#/pemakaian', 'Pemakai Kendaraan'], ['perawatan', '#/perawatan', 'Riwayat Perawatan'], ['laporan', '#/laporan', 'Laporan & Cetak']] },
-  { group: 'Dokumentasi', items: [['rancangan', '#/rancangan-db', 'Rancangan Database']] },
+  { group: 'Dokumentasi', items: [['rancangan', '#/rancangan-db', 'Rancangan Database'], ['dokumen', '#/dokumen', 'Dokumen']] },
   { group: 'Administrasi', admin: true, items: [['pengguna', '#/pengguna', 'Kelola Pengguna'], ['pengaturan', '#/pengaturan', 'Pengaturan'], ['log', '#/log', 'Log Aktivitas']] },
 ];
 

@@ -351,3 +351,5 @@ code.type { font-size: 12px; overflow-wrap: anywhere; }
   .report-table tr { break-inside: avoid; }
   a { color: inherit; }
 }
+.doc-list li { grid-template-columns: 220px 1fr; }
+@media (max-width: 640px) { .doc-list li { grid-template-columns: 1fr; } }
