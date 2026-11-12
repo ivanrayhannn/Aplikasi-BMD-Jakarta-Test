@@ -1,4 +1,10 @@
-import { createApp, reactive, ref, computed, watch, onMounted } from '/vendor/vue.js';
+import { createApp, reactive, ref, computed, watch, onMounted } from './vendor/vue.js';
+import config from './config.js';
+
+const DEMO = config.mode === 'demo';
+// Mode demo (GitHub Pages): API dijalankan di browser; mode server: fetch ke backend Node.js.
+const demo = DEMO ? await import('./demo-backend.js') : null;
+const doFetch = (url, opts) => (DEMO ? demo.demoFetch('/' + url, opts) : fetch(url, opts));
 
 // ---------------- State & API ----------------
 const store = reactive({
@@ -11,7 +17,7 @@ const store = reactive({
 const isAdmin = computed(() => store.user?.peran === 'admin');
 
 async function api(path, { method = 'GET', body, raw } = {}) {
-  const res = await fetch('/api' + path, {
+  const res = await doFetch('api' + path, {
     method,
     headers: { 'content-type': 'application/json', ...(store.token ? { authorization: `Bearer ${store.token}` } : {}) },
     body: body ? JSON.stringify(body) : undefined,
@@ -58,7 +64,7 @@ const stnkClass = (d) => {
   const days = (new Date(d) - new Date(today())) / 864e5;
   return days < 0 ? 'bad' : days <= 30 ? 'warn' : 'ok';
 };
-const helpers = { fmtDate, fmtRp, kondisiClass, statusClass, stnkClass, store, isAdmin, go };
+const helpers = { DEMO, fmtDate, fmtRp, kondisiClass, statusClass, stnkClass, store, isAdmin, go };
 
 // ---------------- Komponen ----------------
 const Modal = {
@@ -82,7 +88,7 @@ const Login = {
         go('/dashboard');
       } catch (e) { err.value = e.message; } finally { busy.value = false; }
     }
-    return { f, err, busy, submit };
+    return { f, err, busy, submit, DEMO };
   },
   template: `<div class="login"><form class="card" @submit.prevent="submit">
     <h1>SI-<span>KDO</span></h1>
@@ -91,6 +97,7 @@ const Login = {
     <div class="field"><label for="u">Username</label><input id="u" v-model="f.username" autocomplete="username" required autofocus></div>
     <div class="field"><label for="p">Kata sandi</label><input id="p" type="password" v-model="f.password" autocomplete="current-password" required></div>
     <button class="primary" :disabled="busy">{{ busy ? 'Memproses…' : 'Masuk' }}</button>
+    <div v-if="DEMO" class="alert info" style="font-size:12px">Versi demo: data tersimpan di browser ini saja.</div>
     <div class="demo"><b>Akun demo</b><br>admin / admin123 (Administrator BPAD)<br>dishub / dishub123 · dinkes / dinkes123 (Pengurus Barang OPD)</div>
   </form></div>`,
 };
@@ -494,7 +501,11 @@ const App = {
     const pageKey = computed(() => store.route.name + (store.route.params.id ?? '') + JSON.stringify(store.route.query ?? {}));
     const section = computed(() => store.route.name.split('-')[0]);
     async function logout() { try { await api('/logout', { method: 'POST' }); } catch {} logoutLocal(); }
-    return { ready, page, pageKey, section, logout, store, isAdmin };
+    function reset() {
+      if (!confirm('Kembalikan data demo ke kondisi awal? Semua perubahan akan hilang.')) return;
+      demo.resetDemo(); logoutLocal(); location.hash = ''; location.reload();
+    }
+    return { ready, page, pageKey, section, logout, reset, store, isAdmin, DEMO };
   },
   template: `<template v-if="ready">
     <Login v-if="!store.user" />
@@ -509,7 +520,8 @@ const App = {
           <a href="#/log" :class="{active: section === 'log'}">Log Aktivitas</a>
         </template>
         <div class="user"><div><b>{{ store.user.nama }}</b>{{ store.user.peran === 'admin' ? 'Administrator' : 'Pengurus Barang' }} · {{ store.user.perangkat_daerah }}</div>
-          <button class="small" @click="logout">Keluar</button></div>
+          <div class="actions"><button class="small" @click="logout">Keluar</button>
+          <button v-if="DEMO" class="small" @click="reset" title="Hapus semua perubahan dan kembali ke data contoh">Reset demo</button></div></div>
       </nav>
       <main><component :is="page" :key="pageKey" /></main>
     </div>

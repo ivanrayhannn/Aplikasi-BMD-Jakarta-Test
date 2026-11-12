@@ -9,10 +9,15 @@
   },
   "scripts": {
     "start": "node --no-warnings src/server.js",
-    "test": "node --no-warnings --test test/*.test.js"
+    "test": "node --no-warnings --test test/*.test.js",
+    "build:pages": "node scripts/build-pages.mjs",
+    "preview:pages": "npx --yes http-server@14.1.1 dist -p 4173 -c-1"
   },
   "dependencies": {
     "express": "5.1.0",
     "vue": "3.5.13"
+  },
+  "devDependencies": {
+    "sql.js": "1.13.0"
   }
 }

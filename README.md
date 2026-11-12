@@ -37,6 +37,31 @@ Database dan data contoh dibuat otomatis saat pertama dijalankan.
 
 > Ganti kata sandi akun demo sebelum digunakan di lingkungan produksi.
 
+## Demo online (GitHub Pages)
+
+**URL:** https://ivanrayhannn.github.io/Aplikasi-BMD-Jakarta-Test/
+
+Versi demo dibangun otomatis oleh GitHub Actions (`.github/workflows/pages.yml`) setiap ada push ke branch
+`main` atau `claude/dreamy-pascal-qxpvy1`. Karena GitHub Pages hanya menyajikan file statis, pada mode demo
+**API yang sama (`src/api.js`) dijalankan di browser** memakai SQLite WebAssembly (sql.js):
+
+- data tersimpan di `localStorage` browser masing-masing pengunjung (tidak dibagi antar-pengguna),
+- tombol **Reset demo** di sidebar mengembalikan data contoh,
+- untuk penggunaan sebenarnya (data bersama, multi-user) jalankan mode server di atas.
+
+Aktivasi satu kali: **Settings → Pages → Build and deployment → Source: GitHub Actions**, lalu jalankan ulang
+workflow "Deploy demo ke GitHub Pages" di tab Actions.
+
+Build dan cek lokal:
+
+```bash
+npm run build:pages
+```
+
+```bash
+npm run preview:pages
+```
+
 ## Pengujian
 
 ```bash
@@ -46,8 +71,12 @@ npm test
 ## Struktur
 
 ```
-src/        server.js (entry), app.js (route + business rules), db.js (skema + seed), auth.js
-public/     index.html, app.js (Vue SPA), styles.css
+src/        server.js (entry), app.js (Express), api.js (endpoint + business rules),
+            schema.js (skema + data contoh), db.js (node:sqlite), auth.js
+public/     index.html, app.js (Vue SPA), styles.css, config.js (mode server/demo)
+demo/       backend.js — menjalankan src/api.js di browser untuk GitHub Pages
+scripts/    build-pages.mjs — build statis ke dist/
+.github/    workflows/pages.yml — deploy otomatis ke GitHub Pages
 test/       api.test.js — pengujian API & business rules
 docs/       kebutuhan.md — ruang lingkup, proses bisnis, business rules, skenario uji
 ```
