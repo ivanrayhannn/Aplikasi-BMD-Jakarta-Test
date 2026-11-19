@@ -30,7 +30,7 @@ export function register(app, { db }) {
     const pemegang = db.prepare(`SELECT COALESCE(SUM(pemegang_pns_id IS NOT NULL), 0) AS ada, COALESCE(SUM(pemegang_pns_id IS NULL), 0) AS tanpa
       FROM kdo WHERE is_aktif = 1`).get();
 
-    // BR-19: rusak berat boleh tetap punya pemegang sampai diserahkan ke pengurus barang, tetapi ditandai untuk ditindaklanjuti.
+    // BR-21: rusak berat boleh tetap punya pemegang sampai diserahkan ke pengurus barang, tetapi ditandai untuk ditindaklanjuti.
     const rusakBeratDipegang = db.prepare(`
       SELECT k.id, k.nomor_polisi, k.merek, k.tipe, p.nama_pegawai AS pemegang_nama
       FROM kdo k JOIN pns p ON p.id = k.pemegang_pns_id

@@ -16,7 +16,7 @@ export const PnsList = {
     return { ...useList('/pns', { q: '', status_kepegawaian: '', perangkat_daerah_id: '' }), units, isAdmin, label, tone };
   },
   template: `<div>
-    <PageHeader title="PNS" subtitle="Pegawai yang dapat ditunjuk sebagai pemegang kendaraan dinas">
+    <PageHeader title="Pegawai (PNS)" subtitle="Pegawai yang dapat ditunjuk sebagai pemegang kendaraan dinas">
       <a v-if="isAdmin" class="btn primary" href="#/pns/baru">+ Tambah PNS</a>
     </PageHeader>
     <div v-if="error" class="alert error">{{ error }}</div>

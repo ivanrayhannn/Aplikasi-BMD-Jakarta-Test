@@ -105,7 +105,7 @@ export const PerawatanPage = {
     return { tab, select, TABS };
   },
   template: `<div>
-    <PageHeader title="Riwayat Perawatan" subtitle="Servis, biaya, dan jadwal perawatan kendaraan" />
+    <PageHeader title="Perawatan" subtitle="Servis, biaya, dan jadwal perawatan seluruh kendaraan. Untuk satu kendaraan, buka detailnya." />
     <div class="card">
       <div class="tabs" role="tablist">
         <button v-for="[k, t] in TABS" :key="k" role="tab" :aria-selected="tab === k" :class="{ active: tab === k }" @click="select(k)">{{ t }}</button>

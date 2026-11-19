@@ -2,6 +2,7 @@
 // Disusun di sekitar satu keputusan: kendaraan mana yang perlu perhatian sekarang.
 import { ref, computed, onMounted } from '../../vendor/vue.js';
 import { api } from '../api.js';
+import { isAdmin } from '../store.js';
 import { label, tone, tanggal, waktu, angka, kendaraan, jatuhTempo, STATUS_JADWAL_LABEL } from '../format.js';
 import { Badge, EmptyState, PageHeader } from '../components/ui.js';
 
@@ -30,7 +31,7 @@ export const Dashboard = {
     const perhatian = computed(() => (d.value
       ? d.value.pengingat.servis.length + d.value.pengingat.dokumen.length + d.value.pengingat.pembaruan_data.length
       + d.value.pengingat.rusak_berat_dipegang.length : 0));
-    return { d, meta, error, kondisi, perhatian, ringkasRupiah, label, tone, tanggal, waktu, angka, kendaraan, jatuhTempo, STATUS_JADWAL_LABEL };
+    return { d, meta, error, kondisi, perhatian, isAdmin, ringkasRupiah, label, tone, tanggal, waktu, angka, kendaraan, jatuhTempo, STATUS_JADWAL_LABEL };
   },
   template: `<div>
     <PageHeader title="Dashboard Kendaraan" subtitle="Kondisi dan pemakaian kendaraan dinas operasional" />
@@ -64,37 +65,41 @@ export const Dashboard = {
             <h3>Rusak berat, masih ada pemegang <span class="sub-inline">tarik ke pengurus barang</span></h3>
             <ul class="reminders"><li v-for="k in d.pengingat.rusak_berat_dipegang" :key="'r' + k.id">
               <a :href="'#/kdo/' + k.id"><Plate :nopol="k.nomor_polisi" /></a>
-              <span>{{ k.pemegang_nama }}</span><Badge tone="bad">Rusak berat</Badge></li></ul>
+              <span>{{ k.pemegang_nama }}</span><Badge tone="bad">Rusak berat</Badge>
+              <a class="act" :href="'#/kdo/' + k.id + '?tab=pemegang'">{{ isAdmin ? 'Tutup penugasan' : 'Lihat' }}</a></li></ul>
           </template>
           <template v-if="d.pengingat.servis.length">
             <h3>Jadwal servis <span class="sub-inline">terlewat atau dalam {{ meta.pengingat_servis_hari }} hari</span></h3>
             <ul class="reminders"><li v-for="s in d.pengingat.servis" :key="'s' + s.kdo_id">
               <a :href="'#/kdo/' + s.kdo_id"><Plate :nopol="s.nomor_polisi" /></a>
               <span>{{ kendaraan(s) }}</span>
-              <Badge :tone="tone('status_jadwal', s.status_jadwal)">{{ STATUS_JADWAL_LABEL[s.status_jadwal] }}, {{ tanggal(s.jadwal_berikutnya) }}</Badge></li></ul>
+              <Badge :tone="tone('status_jadwal', s.status_jadwal)">{{ STATUS_JADWAL_LABEL[s.status_jadwal] }}, {{ tanggal(s.jadwal_berikutnya) }}</Badge>
+              <a class="act" :href="'#/kdo/' + s.kdo_id + '?tab=perawatan'">{{ isAdmin ? 'Catat servis' : 'Lihat' }}</a></li></ul>
           </template>
           <template v-if="d.pengingat.dokumen.length">
             <h3>STNK dan pajak <span class="sub-inline">habis atau dalam 30 hari</span></h3>
             <ul class="reminders"><li v-for="k in d.pengingat.dokumen" :key="'d' + k.id">
               <a :href="'#/kdo/' + k.id"><Plate :nopol="k.nomor_polisi" /></a>
               <span>STNK <Badge :tone="jatuhTempo(k.masa_berlaku_stnk).tone">{{ jatuhTempo(k.masa_berlaku_stnk).text }}</Badge></span>
-              <span>Pajak <Badge :tone="jatuhTempo(k.tanggal_pajak).tone">{{ jatuhTempo(k.tanggal_pajak).text }}</Badge></span></li></ul>
+              <span>Pajak <Badge :tone="jatuhTempo(k.tanggal_pajak).tone">{{ jatuhTempo(k.tanggal_pajak).text }}</Badge></span>
+              <a class="act" :href="'#/kdo/' + k.id + (isAdmin ? '/ubah' : '')">{{ isAdmin ? 'Perbarui tanggal' : 'Lihat' }}</a></li></ul>
           </template>
           <template v-if="d.pengingat.pembaruan_data.length">
             <h3>Data lama <span class="sub-inline">tidak diperbarui lebih dari {{ meta.pengingat_pembaruan_hari }} hari</span></h3>
             <ul class="reminders"><li v-for="k in d.pengingat.pembaruan_data" :key="'p' + k.id">
-              <a :href="'#/kdo/' + k.id"><Plate :nopol="k.nomor_polisi" /></a><span>terakhir {{ waktu(k.updated_at) }}</span></li></ul>
+              <a :href="'#/kdo/' + k.id"><Plate :nopol="k.nomor_polisi" /></a><span>terakhir {{ waktu(k.updated_at) }}</span>
+              <a class="act" :href="'#/kdo/' + k.id + (isAdmin ? '/ubah' : '')">{{ isAdmin ? 'Perbarui data' : 'Lihat' }}</a></li></ul>
           </template>
         </section>
 
         <section class="card" aria-labelledby="dipakai-judul">
-          <div class="card-head"><h2 id="dipakai-judul">Pemegang saat ini</h2><a href="#/pemakaian?status=aktif">Semua pemakaian</a></div>
+          <div class="card-head"><h2 id="dipakai-judul">Pemegang saat ini</h2><a href="#/pemakaian?status=aktif">Semua penugasan</a></div>
           <ul class="vehicle-list"><li v-for="r in d.sedang_dipakai.slice(0, 8)" :key="r.pemakaian_id">
             <a :href="'#/kdo/' + r.kdo_id"><Plate :nopol="r.nomor_polisi" /></a>
             <span><b>{{ r.pns_nama }}</b><span class="sub">{{ kendaraan(r) }}, {{ r.perangkat_daerah_singkatan }}</span></span>
           </li></ul>
           <p v-if="d.sedang_dipakai.length > 8" class="hint">dan {{ d.sedang_dipakai.length - 8 }} kendaraan lain</p>
-          <EmptyState v-if="!d.sedang_dipakai.length" title="Belum ada kendaraan yang punya pemegang" hint="Tautkan pemakai di menu Pemakai Kendaraan." />
+          <EmptyState v-if="!d.sedang_dipakai.length" title="Belum ada kendaraan yang punya pemegang" hint="Tautkan pemegang di menu Penugasan Pemegang." />
         </section>
 
         <section class="card" aria-labelledby="terbaru-judul">

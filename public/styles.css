@@ -209,6 +209,9 @@ dl.kv dd { margin: 0; font-weight: 500; min-width: 0; overflow-wrap: anywhere; }
 .cond:hover { text-decoration: none; border-color: var(--control-border); background: var(--surface-2); }
 .cond b { font-size: 22px; line-height: 1.1; font-variant-numeric: tabular-nums; }
 .cond span { font-size: 13px; color: var(--muted); }
+.reminders .act { margin-left: auto; padding: 10px 0; font-weight: 600; white-space: nowrap; }
+.next-step { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; justify-content: space-between; }
+.next-step .actions { display: flex; gap: 8px; }
 .holder-line { margin: 12px 0 0; font-size: 14px; color: var(--muted); }
 .holder-line a { display: inline-block; padding: 10px 0; }
 .cond.ok b { color: var(--ok); } .cond.warn b { color: var(--warn); } .cond.bad b { color: var(--bad); }

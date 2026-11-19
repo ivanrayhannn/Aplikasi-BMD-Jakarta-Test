@@ -24,12 +24,12 @@ export const TautkanDialog = {
       ]);
     });
     async function save() {
-      const res = await form.submit((v) => api.post('/pemakaian', v), { success: 'Pemakai kendaraan ditautkan' });
+      const res = await form.submit((v) => api.post('/pemakaian', v), { success: 'Pemegang ditautkan' });
       if (res) emit('saved', res.data);
     }
     return { ...form, kdoOptions, pnsOptions, save, today };
   },
-  template: `<Modal title="Tautkan Pemakai Kendaraan" @close="$emit('close')">
+  template: `<Modal title="Tautkan Pemegang Kendaraan" @close="$emit('close')">
     <div v-if="state.message" class="alert error" role="alert">{{ state.message }}</div>
     <form class="form" @submit.prevent="save" novalidate>
       <Field label="Kendaraan" name="kdo_id" :error="errors.kdo_id" required full>
@@ -37,7 +37,7 @@ export const TautkanDialog = {
         <select v-else id="kdo_id" v-model.number="values.kdo_id"><option :value="null">Pilih kendaraan tanpa pemakai</option>
           <option v-for="k in kdoOptions" :key="k.id" :value="k.id">{{ k.nomor_polisi }}, {{ k.merek }} {{ k.tipe }}</option></select>
       </Field>
-      <Field label="Pegawai pemakai" name="pns_id" :error="errors.pns_id" required full hint="Hanya PNS berstatus aktif">
+      <Field label="Pegawai pemegang" name="pns_id" :error="errors.pns_id" required full hint="Hanya PNS berstatus aktif">
         <input v-if="pns" id="pns_id" :value="pns.nama_pegawai" disabled>
         <select v-else id="pns_id" v-model.number="values.pns_id"><option :value="null">Pilih pegawai</option>
           <option v-for="p in pnsOptions" :key="p.id" :value="p.id">{{ p.nama_pegawai }}, {{ p.jabatan }} ({{ p.perangkat_daerah_singkatan || p.perangkat_daerah }})</option></select>
@@ -57,12 +57,12 @@ export const TutupPemakaianDialog = {
   setup(props, { emit }) {
     const form = useForm(schemas.pemakaianSelesai, { tanggal_selesai: today(), keterangan: '' });
     async function save() {
-      const res = await form.submit((v) => api.post(`/pemakaian/${props.pemakaian.id}/selesai`, v), { success: 'Pemakaian ditutup' });
+      const res = await form.submit((v) => api.post(`/pemakaian/${props.pemakaian.id}/selesai`, v), { success: 'Penugasan ditutup' });
       if (res) emit('saved', res.data);
     }
     return { ...form, save, today, tanggal };
   },
-  template: `<Modal title="Tutup Pemakaian Kendaraan" @close="$emit('close')">
+  template: `<Modal title="Tutup Penugasan Pemegang" @close="$emit('close')">
     <p>Tutup pemakaian <b>{{ pemakaian.nomor_polisi }}</b> oleh <b>{{ pemakaian.pns_nama }}</b> yang berjalan sejak {{ tanggal(pemakaian.tanggal_mulai) }}?</p>
     <div v-if="state.message" class="alert error" role="alert">{{ state.message }}</div>
     <form class="form" @submit.prevent="save" novalidate>

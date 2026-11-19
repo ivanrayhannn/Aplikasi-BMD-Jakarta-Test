@@ -39,12 +39,15 @@ defineRoute('/log', LogPage, { section: 'log', admin: true });
 defineRoute('/rancangan-db', RancanganDbPage, { section: 'rancangan' });
 defineRoute('/dokumen', DokumenPage, { section: 'dokumen' });
 
+// Menu mengikuti siklus hidup KDO: data pendukung (unit, pegawai) diisi sebelum kendaraan,
+// lalu kegiatan (penugasan, perawatan), lalu pelaporan. Urutan ini sekaligus urutan kerja pengguna baru.
 const MENU = [
   { group: null, items: [['dashboard', '#/dashboard', 'Dashboard']] },
-  { group: 'Data Master', items: [['kdo', '#/kdo', 'Kendaraan Dinas'], ['pns', '#/pns', 'PNS'], ['pd', '#/perangkat-daerah', 'Perangkat Daerah']] },
-  { group: 'Operasional', items: [['pemakaian', '#/pemakaian', 'Pemakai Kendaraan'], ['perawatan', '#/perawatan', 'Riwayat Perawatan'], ['laporan', '#/laporan', 'Laporan & Cetak']] },
-  { group: 'Administrasi', admin: true, items: [['pengguna', '#/pengguna', 'Kelola Pengguna'], ['pengaturan', '#/pengaturan', 'Pengaturan'], ['log', '#/log', 'Log Aktivitas']] },
-  { group: 'SYSTEM DOCUMENTATION', items: [['rancangan', '#/rancangan-db', 'Rancangan Database'], ['dokumen', '#/dokumen', 'Dokumen']] },
+  { group: 'Pendataan', items: [['pd', '#/perangkat-daerah', 'Perangkat Daerah'], ['pns', '#/pns', 'Pegawai (PNS)'], ['kdo', '#/kdo', 'Kendaraan Dinas']] },
+  { group: 'Kegiatan', items: [['pemakaian', '#/pemakaian', 'Penugasan Pemegang'], ['perawatan', '#/perawatan', 'Perawatan']] },
+  { group: 'Pelaporan', items: [['laporan', '#/laporan', 'Laporan & Cetak']] },
+  { group: 'Administrasi', admin: true, items: [['pengaturan', '#/pengaturan', 'Pengaturan Instansi'], ['pengguna', '#/pengguna', 'Kelola Pengguna'], ['log', '#/log', 'Log Aktivitas']] },
+  { group: 'System Documentation', items: [['rancangan', '#/rancangan-db', 'Rancangan Database'], ['dokumen', '#/dokumen', 'Dokumen']] },
 ];
 
 const App = {

@@ -3,7 +3,7 @@
 | Atribut | Isi |
 |---|---|
 | Dokumen | Product Requirements Document (versi terdokumentasi) |
-| Versi | 1.1 |
+| Versi | 1.4 |
 | Status | Draf untuk review dan sign-off pengguna |
 | Sumber | `docs/prd/sumber/PRD.md` dan `docs/prd/sumber/features/01` s.d. `08` (diarsipkan apa adanya) |
 | Aplikasi | Branch `claude/dreamy-pascal-qxpvy1`, demo: https://ivanrayhannn.github.io/Aplikasi-BMD-Jakarta-Test/ |
@@ -180,7 +180,7 @@ Setiap fitur merangkum "Tujuan" dan "Selesai bila" dari berkas fitur sumber. Kri
 | DK-4 | Daftar menampilkan data terbaru setelah perubahan; pesan jelas bila kosong. | Selesai |
 | DK-5 | Konfirmasi hapus menyebut nomor polisi. | Selesai |
 
-### Fase 2: Pemakai Kendaraan (fitur 03, prioritas sedang)
+### Fase 2: Penugasan Pemegang (fitur 03 "Pemakai Kendaraan", prioritas sedang)
 
 | ID | Kriteria penerimaan | Status |
 |---|---|---|
@@ -191,7 +191,7 @@ Setiap fitur merangkum "Tujuan" dan "Selesai bila" dari berkas fitur sumber. Kri
 | PK-5 | Riwayat dapat dilihat dari halaman kendaraan dan halaman pegawai. | Selesai |
 | PK-6 | Pegawai yang masih memegang kendaraan tidak dihapus tanpa penjelasan ke petugas. | Selesai (dialog hapus menyebut kendaraan yang akan dilepas) |
 
-### Fase 3: Riwayat Perawatan (fitur 04, prioritas tinggi)
+### Fase 3: Perawatan (fitur 04 "Riwayat Perawatan", prioritas tinggi)
 
 | ID | Kriteria penerimaan | Status |
 |---|---|---|
@@ -261,9 +261,9 @@ Setiap fitur merangkum "Tujuan" dan "Selesai bila" dari berkas fitur sumber. Kri
 | BR-16 | Saat PNS dihapus, pemakaian aktifnya ditutup hari ini; nama dan NIP tersimpan di riwayat. | Tambahan, menjaga riwayat | API |
 | BR-17 | Status PNS tidak dapat diubah dari `aktif` selama masih memegang kendaraan (`409`). | Tambahan, perlu konfirmasi (Q-3) | API |
 | BR-18 | Kendaraan yang masih dipakai tidak dapat dinonaktifkan (`409`). | Tambahan | API |
-| BR-19 | Kendaraan rusak berat boleh tetap punya pemegang sampai diserahkan ke pengurus barang, tetapi tampil di "Perlu perhatian". Status pemegang (ada/tanpa) ditampilkan terpisah dari kondisi. | Keputusan pemilik produk (UAT dashboard) | API + UI |
 | BR-19 | Tanggal servis, tanggal mulai, dan tanggal selesai pemakaian tidak boleh di masa depan; jadwal servis berikutnya harus setelah tanggal servis; biaya tidak negatif. | Fitur 04 "tanggal tidak wajar" | API + DB CHECK |
 | BR-20 | Harus selalu ada minimal satu admin aktif; admin tidak dapat menonaktifkan atau menurunkan perannya sendiri. | Tambahan, mencegah terkunci | API |
+| BR-21 | Kendaraan rusak berat boleh tetap punya pemegang sampai diserahkan ke pengurus barang, tetapi tampil di "Perlu perhatian". Status pemegang (ada/tanpa) ditampilkan terpisah dari kondisi. | Keputusan pemilik produk (UAT dashboard) | API + UI |
 
 ## 9. Alur pengguna
 
@@ -292,7 +292,7 @@ flowchart LR
 
 ```mermaid
 flowchart LR
-  A[Pemakai Kendaraan / detail kendaraan] --> B[Tautkan pemakai]
+  A[Detail kendaraan tab Penugasan / menu Penugasan Pemegang] --> B[Tautkan pemegang]
   B --> C{Ada pemakaian aktif?}
   C -->|ya| D[409: tutup pemakaian dulu]
   C -->|tidak| E{PNS aktif?}
@@ -305,7 +305,7 @@ flowchart LR
 
 ```mermaid
 flowchart LR
-  A[Detail kendaraan / Riwayat Perawatan] --> B[Catat perawatan]
+  A[Detail kendaraan tab Perawatan / menu Perawatan] --> B[Catat perawatan]
   B --> C[Kondisi kendaraan diperbarui dari catatan terbaru]
   B --> D[Jadwal berikutnya masuk pengingat]
   B --> E[Rekap biaya bertambah]
@@ -332,6 +332,21 @@ flowchart LR
   A --> D[Lihat pilihan terkendali]
   G[Kelola Pengguna] --> H[Tambah / ubah / nonaktifkan akun]
 ```
+
+### G. Struktur menu dan pusat kerja (revisi 1.4)
+
+Menu mengikuti siklus hidup KDO agar pengguna tidak bolak-balik: data pendukung diisi sebelum kendaraan, lalu kegiatan, lalu pelaporan.
+
+| Grup | Menu | Fungsi |
+|---|---|---|
+| (beranda) | Dashboard | Ringkasan dan daftar tindak lanjut; setiap butir langsung membuka tindakannya (tab Penugasan, tab Perawatan, atau form ubah). |
+| Pendataan | Perangkat Daerah, Pegawai (PNS), Kendaraan Dinas | Urut sesuai ketergantungan data: unit, lalu pegawai, lalu kendaraan. |
+| Kegiatan | Penugasan Pemegang, Perawatan | Daftar lintas kendaraan untuk mencari dan merekap. |
+| Pelaporan | Laporan & Cetak | Cetak, PDF, Excel. |
+| Administrasi (admin) | Pengaturan Instansi, Kelola Pengguna, Log Aktivitas | Pengaturan instansi di atas karena diisi pertama. |
+| System Documentation | Rancangan Database, Dokumen | Referensi. |
+
+Detail Kendaraan adalah pusat kerja satu kendaraan dengan tab **Ringkasan | Penugasan | Perawatan** (`#/kdo/{id}?tab=pemegang|perawatan`). Saran langkah berikutnya: kendaraan baru tanpa pemegang langsung diarahkan ke tab Penugasan dengan tombol Tautkan Pemegang; servis yang menghasilkan Rusak berat pada kendaraan yang masih dipegang menampilkan saran Tutup Penugasan (BR-21).
 
 ## 10. Model data
 
@@ -445,6 +460,7 @@ Strategi uji berlapis:
 | Versi | Tanggal | Perubahan |
 |---|---|---|
 | 1.0 | (sumber) | PRD dan 8 spesifikasi fitur dari pemilik produk. |
+| 1.4 | 19 Nov 2026 | Revisi alur menu (bagian 9.G): grup Pendataan/Kegiatan/Pelaporan, "Pemakai Kendaraan" menjadi "Penugasan Pemegang", detail kendaraan bertab, saran langkah berikutnya, dashboard langsung ke tindakan; status pemegang terpisah dari kondisi dan BR-21. Versi sebelumnya (commit `e5647ca`) tersedia di `/lama/` demo untuk perbandingan. |
 | 1.3 | 12 Nov 2026 | Keputusan Q-1 s.d. Q-8; kolom peruntukan; desain ulang (plat merah, Atkinson Hyperlegible, dashboard berbasis "perlu perhatian"). |
 | 1.2 | 12 Nov 2026 | Data awal diganti dengan data uji DKI dari pemilik produk (36 SKPD, 20 pegawai, 20 kendaraan); `nomor_mesin` boleh kosong (K-9); menu Rancangan Database (ERD dan kamus data). |
 | 1.1 | 12 Nov 2026 | Versi terdokumentasi: ID kebutuhan dan kriteria, status implementasi, aturan bisnis BR-01 s.d. BR-20, keputusan implementasi K-1 s.d. K-8, matriks keterlacakan, pertanyaan terbuka. |

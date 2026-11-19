@@ -54,6 +54,14 @@ const toast = (page, text) => page.waitForSelector(`.toast:has-text("${text}")`,
   await page.waitForSelector('h1:has-text("Kendaraan Dinas")');
   ok('Kartu Total Kendaraan -> daftar kendaraan');
   await page.goto(BASE + '#/dashboard');
+  const nav = await page.$$eval('nav#menu-utama .nav-group', (els) => els.map((e) => e.textContent.trim()));
+  if (nav.join('|') !== 'Pendataan|Kegiatan|Pelaporan|Administrasi|System Documentation') throw new Error('urutan grup menu: ' + nav);
+  ok('Menu urut siklus kerja: Pendataan, Kegiatan, Pelaporan, Administrasi, System Documentation');
+  await page.click('.reminders a.act:has-text("Tutup penugasan")');
+  await page.waitForSelector('[role=tab][aria-selected=true]:has-text("Penugasan")');
+  await page.waitForSelector('button:has-text("Tutup Penugasan")');
+  ok('Dashboard "Rusak berat, masih ada pemegang" -> tab Penugasan kendaraan dengan tombol Tutup Penugasan');
+  await page.goto(BASE + '#/dashboard');
   await page.click('a.cond.bad');
   await page.waitForFunction(() => document.querySelectorAll('tbody tr').length === 2 && document.querySelector('tbody').textContent.includes('B 3920 PQJ'));
   ok('Kartu Rusak Berat -> daftar tersaring kondisi rusak berat (2 kendaraan)');
@@ -92,6 +100,7 @@ const toast = (page, text) => page.waitForSelector(`.toast:has-text("${text}")`,
   await page.click('form button.primary');
   await page.waitForSelector('h1:has-text("B 5555 UJI")');
   await page.waitForSelector('dd:has-text("Putri Ayu Anggraini")');
+  if (await page.locator('.next-step').count()) throw new Error('saran langkah hanya untuk kendaraan tanpa pemegang');
   ok('Tambah kendaraan dengan pemegang -> detail B 5555 UJI, pemegang Putri, pemakaian aktif terbentuk');
 
   // Ubah kendaraan
@@ -103,25 +112,27 @@ const toast = (page, text) => page.waitForSelector(`.toast:has-text("${text}")`,
   await page.waitForSelector('dd:has-text("Abu-abu")');
   ok('Ubah kendaraan -> warna tersimpan; dropdown pemegang terkunci selama dipakai');
 
-  // Pemakaian: tutup & tautkan dari detail
-  await page.click('button:has-text("Tutup Pemakaian")');
+  // Penugasan: tutup & tautkan dari tab Penugasan di detail
+  await page.click('[role=tab]:has-text("Penugasan")');
+  await page.click('button:has-text("Tutup Penugasan")');
   await page.keyboard.press('Escape');
   await page.waitForSelector('.modal', { state: 'detached' });
-  ok('Dialog Tutup Pemakaian -> tertutup dengan Escape');
-  await page.click('button:has-text("Tutup Pemakaian")');
+  ok('Tab Penugasan, dialog Tutup Penugasan -> tertutup dengan Escape');
+  await page.click('button:has-text("Tutup Penugasan")');
   await page.click('.modal button.primary');
-  await toast(page, 'Pemakaian ditutup');
+  await toast(page, 'Penugasan ditutup');
   await page.waitForSelector('.badge:has-text("Belum ada pemegang")');
-  ok('Tutup pemakaian -> pemegang kosong, riwayat berstatus Selesai');
-  await page.click('button:has-text("Tautkan Pemakai")');
+  ok('Tutup penugasan -> pemegang kosong, riwayat berstatus Selesai');
+  await page.click('button:has-text("Tautkan Pemegang")');
   await pick(page, '.modal #pns_id', 'Ratna Juwita');
   await page.fill('.modal #keterangan', 'Uji tautkan');
   await page.click('.modal button.primary');
-  await toast(page, 'Pemakai kendaraan ditautkan');
+  await toast(page, 'Pemegang ditautkan');
   await page.waitForSelector('dd a:has-text("Ratna Juwita")');
-  ok('Tautkan pemakai -> Ratna Juwita Lestari menjadi pemegang');
+  ok('Tautkan pemegang -> Ratna Juwita Lestari menjadi pemegang');
 
-  // Perawatan dari detail
+  // Perawatan dari tab Perawatan di detail
+  await page.click('[role=tab]:has-text("Perawatan")');
   await page.click('button:has-text("Catat Perawatan")');
   await page.selectOption('.modal #jenis_perawatan', 'perbaikan');
   await page.fill('.modal #biaya', '-1');
@@ -146,6 +157,13 @@ const toast = (page, text) => page.waitForSelector(`.toast:has-text("${text}")`,
   await page.click('.modal button.danger-solid');
   await page.waitForSelector('.empty:has-text("Belum ada catatan perawatan")');
   ok('Hapus catatan perawatan (konfirmasi) -> daftar kosong');
+  await page.click('button:has-text("Catat Perawatan")');
+  await page.fill('.modal #biaya', '0');
+  await page.selectOption('.modal #kondisi_setelah', 'rusak_berat');
+  await page.click('.modal button.primary');
+  await page.waitForSelector('.next-step:has-text("Rusak berat") button:has-text("Tutup Penugasan")');
+  await page.waitForSelector('[role=tab][aria-selected=true]:has-text("Penugasan")');
+  ok('Servis hasil rusak berat -> saran Tutup Penugasan, tab Penugasan terbuka');
 
   // Hapus kendaraan
   await page.click('.page-head button.danger');
@@ -176,7 +194,7 @@ const toast = (page, text) => page.waitForSelector(`.toast:has-text("${text}")`,
   await page.click('tbody a:has-text("Pegawai Uji")');
   await page.click('.page-head button.danger');
   await page.click('.modal button.danger-solid');
-  await page.waitForSelector('h1:has-text("PNS")');
+  await page.waitForSelector('h1:has-text("Pegawai (PNS)")');
   ok('Hapus PNS tanpa kendaraan -> kembali ke daftar');
 
   // Perangkat daerah: hapus ditolak 409, tambah & hapus
@@ -200,17 +218,32 @@ const toast = (page, text) => page.waitForSelector(`.toast:has-text("${text}")`,
   await page.waitForSelector('h1:has-text("Perangkat Daerah")');
   ok('Perangkat daerah: validasi email, tambah PD-099, hapus');
 
-  // Halaman Pemakai Kendaraan
+  // Kendaraan baru tanpa pemegang -> saran langkah berikutnya
+  await page.goto(BASE + '#/kdo/baru');
+  await page.fill('#nomor_polisi', 'b 7777 uji');
+  await page.fill('#merek', 'Daihatsu');
+  await page.fill('#nomor_rangka', 'UJI-RANGKA-77');
+  await pick(page, '#perangkat_daerah_id', 'Dinas Kesehatan');
+  await page.click('form button.primary');
+  await page.waitForSelector('.next-step:has-text("Langkah berikutnya") button:has-text("Tautkan Pemegang")');
+  await page.click('.next-step button:has-text("Tautkan Pemegang")');
+  await pick(page, '.modal #pns_id', 'Ratna Juwita');
+  await page.click('.modal button.primary');
+  await toast(page, 'Pemegang ditautkan');
+  await page.waitForSelector('.next-step', { state: 'detached' });
+  ok('Kendaraan baru tanpa pemegang -> tab Penugasan + saran Tautkan Pemegang, selesai dalam satu alur');
+
+  // Menu Penugasan Pemegang
   await page.goto(BASE + '#/pemakaian');
   await page.click('tr:has-text("B 3871 PQD") button:has-text("Tutup")');
   await page.click('.modal button.primary');
-  await toast(page, 'Pemakaian ditutup');
+  await toast(page, 'Penugasan ditutup');
   await page.click('.page-head button.primary');
   await pick(page, '.modal #kdo_id', 'B 3871 PQD');
   await pick(page, '.modal #pns_id', 'Putri Ayu Anggraini');
   await page.click('.modal button.primary');
-  await toast(page, 'Pemakai kendaraan ditautkan');
-  ok('Menu Pemakai Kendaraan: tutup pemakaian B 3871 PQD, lalu tautkan ke Putri');
+  await toast(page, 'Pemegang ditautkan');
+  ok('Menu Penugasan Pemegang: tutup penugasan B 3871 PQD, lalu tautkan ke Putri');
 
   // Perawatan (tab)
   await page.goto(BASE + '#/perawatan');

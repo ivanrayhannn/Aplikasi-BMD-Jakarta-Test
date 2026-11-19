@@ -1,4 +1,4 @@
-// Fitur 03 (Pemakai Kendaraan): pemakaian aktif & riwayat, tautkan pemakai, tutup pemakaian.
+// Fitur 03 (Penugasan Pemegang, dulu "Pemakai Kendaraan"): pemakaian aktif & riwayat, tautkan pemakai, tutup pemakaian.
 import { ref } from '../../vendor/vue.js';
 import { isAdmin } from '../store.js';
 import { label, tone, tanggal, kendaraan } from '../format.js';
@@ -15,9 +15,8 @@ export const PemakaianPage = {
     return { ...list, dialog, done, isAdmin, label, tone, tanggal, kendaraan };
   },
   template: `<div>
-    <PageHeader title="Pemakai Kendaraan" subtitle="Siapa memakai kendaraan apa, dan dalam periode kapan">
-      <a class="btn" href="#/pns">Daftar Pegawai</a>
-      <button v-if="isAdmin" class="primary" @click="dialog = 'tautkan'">+ Tautkan Pemakai</button>
+    <PageHeader title="Penugasan Pemegang" subtitle="Pegawai penanggung jawab setiap kendaraan: yang aktif dan riwayatnya">
+      <button v-if="isAdmin" class="primary" @click="dialog = 'tautkan'">+ Tautkan Pemegang</button>
     </PageHeader>
     <div v-if="error" class="alert error">{{ error }}</div>
     <div class="card">
