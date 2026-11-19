@@ -61,6 +61,15 @@ test('PNS: NIP 18 digit & unik (422), filter status', async () => {
   assert.deepEqual(list.body.data.map((p) => p.nama_pegawai), ['Pegawai Pensiun']);
 });
 
+test('daftar KDO urut unit A-Z lalu nomor polisi', async () => {
+  const rows = (await api('GET', '/kdo?per_page=100', { token })).body.data;
+  const key = (k) => [k.perangkat_daerah_singkatan.toLowerCase(), k.nomor_polisi];
+  for (let i = 1; i < rows.length; i++) {
+    const [a, b] = [key(rows[i - 1]), key(rows[i])];
+    assert.ok(a[0] < b[0] || (a[0] === b[0] && a[1] <= b[1]), `${a} sebelum ${b}`);
+  }
+});
+
 test('KDO: unik nopol/rangka/mesin, tahun 1980–2100, pemegang wajib PNS aktif, nomor mesin boleh kosong', async () => {
   const ok = await api('POST', '/kdo', { token, body: kdoBaru() });
   assert.equal(ok.status, 201);
@@ -94,11 +103,11 @@ test('KDO baru dengan pemegang langsung membentuk pemakaian aktif', async () => 
 
 test('filter daftar kendaraan: q, kondisi, jenis, tanpa pemegang', async () => {
   const q = await api('GET', '/kdo?q=isuzu', { token });
-  assert.deepEqual(q.body.data.map((k) => k.nomor_polisi), ['B 1709 PQB', 'B 9547 PQC']);
+  assert.deepEqual(q.body.data.map((k) => k.nomor_polisi).sort(), ['B 1709 PQB', 'B 9547 PQC']);
   const rb = await api('GET', '/kdo?kondisi=rusak_berat&jenis_kendaraan=roda_2', { token });
-  assert.deepEqual(rb.body.data.map((k) => k.nomor_polisi), ['B 3920 PQJ']);
+  assert.deepEqual(rb.body.data.map((k) => k.nomor_polisi).sort(), ['B 3920 PQJ']);
   const jabatan = await api('GET', '/kdo?peruntukan=jabatan', { token });
-  assert.deepEqual(jabatan.body.data.map((k) => k.nomor_polisi), ['B 1105 PQK', 'B 1213 PQH']);
+  assert.deepEqual(jabatan.body.data.map((k) => k.nomor_polisi).sort(), ['B 1105 PQK', 'B 1213 PQH']);
   const tanpa = await api('GET', '/kdo?tanpa_pemegang=1', { token });
   assert.ok(tanpa.body.data.length > 0 && tanpa.body.data.every((k) => k.pemegang_pns_id === null));
 });

@@ -40,7 +40,8 @@ export function kdoWhere(query) {
 export function register(app, { db, log }) {
   app.get('/api/v1/kdo', (req, res) => {
     const { rows, meta } = paginate(db, {
-      select: KDO_SELECT, from: KDO_FROM, where: kdoWhere(req.query), orderBy: 'k.nomor_polisi', query: req.query,
+      select: KDO_SELECT, from: KDO_FROM, where: kdoWhere(req.query), // Urut per unit (singkatan yang tampil di kolom Unit) agar kendaraan satu SKPD berkumpul.
+      orderBy: 'pd.singkatan COLLATE NOCASE, k.nomor_polisi', query: req.query,
     });
     send(res, rows, { meta });
   });

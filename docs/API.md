@@ -56,7 +56,7 @@ Semua daftar menerima `page` (mulai 1) dan `per_page` (bawaan 20, maksimal 1000)
 | POST | `/pns` | Admin | Wajib `nip`, `nama_pegawai`, `jabatan`, `perangkat_daerah_id` |
 | PUT | `/pns/{id}` | Admin | `409` bila status diubah dari aktif saat masih memegang kendaraan |
 | DELETE | `/pns/{id}` | Admin | Pemakaian aktif ditutup, `kdo.pemegang_pns_id` menjadi `NULL`; respons `{ id, kdo_dilepas }` |
-| GET | `/kdo` | Masuk | `q`, `kondisi`, `jenis_kendaraan`, `perangkat_daerah_id`, `is_aktif`, `tanpa_pemegang=1` |
+| GET | `/kdo` | Masuk | `q`, `kondisi`, `jenis_kendaraan`, `perangkat_daerah_id`, `is_aktif`, `tanpa_pemegang=1`. Urut unit (singkatan perangkat daerah) A-Z, lalu nomor polisi |
 | GET | `/kdo/{id}` | Masuk | Termasuk `pemakaian_aktif`, `riwayat_pemakaian`, `perawatan_ringkas` |
 | POST | `/kdo` | Admin | Wajib `nomor_polisi`, `merek`, `tahun_produksi`, `jenis_kendaraan`, `nomor_rangka`, `nomor_mesin`, `perangkat_daerah_id`. `pemegang_pns_id` opsional (membuka pemakaian) |
 | PUT | `/kdo/{id}` | Admin | `409` bila mengganti pemegang atau menonaktifkan saat pemakaian aktif |
