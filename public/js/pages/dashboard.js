@@ -28,7 +28,8 @@ export const Dashboard = {
       { key: 'rusak_berat', text: 'Rusak berat', n: d.value.kondisi.rusak_berat },
     ] : []));
     const perhatian = computed(() => (d.value
-      ? d.value.pengingat.servis.length + d.value.pengingat.dokumen.length + d.value.pengingat.pembaruan_data.length : 0));
+      ? d.value.pengingat.servis.length + d.value.pengingat.dokumen.length + d.value.pengingat.pembaruan_data.length
+      + d.value.pengingat.rusak_berat_dipegang.length : 0));
     return { d, meta, error, kondisi, perhatian, ringkasRupiah, label, tone, tanggal, waktu, angka, kendaraan, jatuhTempo, STATUS_JADWAL_LABEL };
   },
   template: `<div>
@@ -48,15 +49,23 @@ export const Dashboard = {
           <div class="condition-links">
             <a v-for="k in kondisi" :key="k.key" :href="'#/kdo?kondisi=' + k.key" :class="'cond ' + tone('kondisi', k.key)">
               <b>{{ k.n }}</b><span>{{ k.text }}</span></a>
-            <a class="cond" href="#/pemakaian?status=aktif"><b>{{ d.sedang_dipakai.length }}</b><span>Sedang dipakai</span></a>
           </div>
+          <p class="holder-line">Status pemegang:
+            <a href="#/pemakaian?status=aktif"><b>{{ d.pemegang.ada }}</b> ada pemegang</a>,
+            <a href="#/kdo?tanpa_pemegang=1"><b>{{ d.pemegang.tanpa }}</b> tanpa pemegang</a></p>
         </div>
       </section>
 
       <div class="dash-grid">
         <section class="card attention" aria-labelledby="perhatian-judul">
           <div class="card-head"><h2 id="perhatian-judul">Perlu perhatian</h2><span class="sub">{{ perhatian }} butir</span></div>
-          <EmptyState v-if="!perhatian" title="Tidak ada yang perlu ditindaklanjuti" hint="Servis, STNK, pajak, dan pembaruan data kendaraan masih dalam batas." />
+          <EmptyState v-if="!perhatian" title="Tidak ada yang perlu ditindaklanjuti" hint="Servis, STNK, pajak, kondisi, dan pembaruan data kendaraan masih dalam batas." />
+          <template v-if="d.pengingat.rusak_berat_dipegang.length">
+            <h3>Rusak berat, masih ada pemegang <span class="sub-inline">tarik ke pengurus barang</span></h3>
+            <ul class="reminders"><li v-for="k in d.pengingat.rusak_berat_dipegang" :key="'r' + k.id">
+              <a :href="'#/kdo/' + k.id"><Plate :nopol="k.nomor_polisi" /></a>
+              <span>{{ k.pemegang_nama }}</span><Badge tone="bad">Rusak berat</Badge></li></ul>
+          </template>
           <template v-if="d.pengingat.servis.length">
             <h3>Jadwal servis <span class="sub-inline">terlewat atau dalam {{ meta.pengingat_servis_hari }} hari</span></h3>
             <ul class="reminders"><li v-for="s in d.pengingat.servis" :key="'s' + s.kdo_id">
@@ -79,13 +88,13 @@ export const Dashboard = {
         </section>
 
         <section class="card" aria-labelledby="dipakai-judul">
-          <div class="card-head"><h2 id="dipakai-judul">Sedang dipakai</h2><a href="#/pemakaian?status=aktif">Semua pemakaian</a></div>
+          <div class="card-head"><h2 id="dipakai-judul">Pemegang saat ini</h2><a href="#/pemakaian?status=aktif">Semua pemakaian</a></div>
           <ul class="vehicle-list"><li v-for="r in d.sedang_dipakai.slice(0, 8)" :key="r.pemakaian_id">
             <a :href="'#/kdo/' + r.kdo_id"><Plate :nopol="r.nomor_polisi" /></a>
             <span><b>{{ r.pns_nama }}</b><span class="sub">{{ kendaraan(r) }}, {{ r.perangkat_daerah_singkatan }}</span></span>
           </li></ul>
           <p v-if="d.sedang_dipakai.length > 8" class="hint">dan {{ d.sedang_dipakai.length - 8 }} kendaraan lain</p>
-          <EmptyState v-if="!d.sedang_dipakai.length" title="Tidak ada kendaraan sedang dipakai" hint="Tautkan pemakai di menu Pemakai Kendaraan." />
+          <EmptyState v-if="!d.sedang_dipakai.length" title="Belum ada kendaraan yang punya pemegang" hint="Tautkan pemakai di menu Pemakai Kendaraan." />
         </section>
 
         <section class="card" aria-labelledby="terbaru-judul">

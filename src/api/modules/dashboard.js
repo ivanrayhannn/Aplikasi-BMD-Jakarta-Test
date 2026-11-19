@@ -1,4 +1,4 @@
-// Fitur 01 (Dashboard Kendaraan): total aset, kendaraan sedang dipakai, status kondisi, aset terbaru,
+// Fitur 01 (Dashboard Kendaraan): total aset, status pemegang, status kondisi, aset terbaru,
 // ditambah pengingat (fitur 07): servis, dokumen STNK/pajak, dan data yang lama tidak diperbarui.
 import { send } from '../http.js';
 import { today } from '../../shared/validation.js';
@@ -26,6 +26,16 @@ export function register(app, { db }) {
       FROM kdo_pemakaian pk JOIN kdo k ON k.id = pk.kdo_id JOIN perangkat_daerah pd ON pd.id = k.perangkat_daerah_id
       WHERE pk.status = 'aktif' ORDER BY pk.tanggal_mulai DESC`).all();
 
+    // Status pemegang dihitung terpisah dari kondisi: "ada pemegang" berarti ada penanggung jawab, bukan sedang dikendarai.
+    const pemegang = db.prepare(`SELECT COALESCE(SUM(pemegang_pns_id IS NOT NULL), 0) AS ada, COALESCE(SUM(pemegang_pns_id IS NULL), 0) AS tanpa
+      FROM kdo WHERE is_aktif = 1`).get();
+
+    // BR-19: rusak berat boleh tetap punya pemegang sampai diserahkan ke pengurus barang, tetapi ditandai untuk ditindaklanjuti.
+    const rusakBeratDipegang = db.prepare(`
+      SELECT k.id, k.nomor_polisi, k.merek, k.tipe, p.nama_pegawai AS pemegang_nama
+      FROM kdo k JOIN pns p ON p.id = k.pemegang_pns_id
+      WHERE k.is_aktif = 1 AND k.kondisi = 'rusak_berat' ORDER BY k.nomor_polisi`).all();
+
     const asetTerbaru = db.prepare(`
       SELECT k.id, k.nomor_polisi, k.merek, k.tipe, k.kondisi, k.created_at, pd.singkatan AS perangkat_daerah_singkatan
       FROM kdo k JOIN perangkat_daerah pd ON pd.id = k.perangkat_daerah_id
@@ -46,12 +56,14 @@ export function register(app, { db }) {
       nilai_perolehan_total: db.prepare('SELECT COALESCE(SUM(nilai_perolehan), 0) AS v FROM kdo WHERE is_aktif = 1').get().v,
       total_nonaktif: db.prepare('SELECT COUNT(*) AS n FROM kdo WHERE is_aktif = 0').get().n,
       kondisi: perKondisi,
+      pemegang,
       sedang_dipakai: sedangDipakai,
       aset_terbaru: asetTerbaru,
       pengingat: {
         servis: jadwalServis(db, { hanyaPerluServis: true }),
         dokumen,
         pembaruan_data: perluPembaruan,
+        rusak_berat_dipegang: rusakBeratDipegang,
       },
     }, { meta: { tanggal: now, pengingat_servis_hari: settings.pengingat_servis_hari, pengingat_pembaruan_hari: settings.pengingat_pembaruan_hari } });
   });

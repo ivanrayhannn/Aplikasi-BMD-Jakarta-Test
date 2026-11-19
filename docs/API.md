@@ -77,7 +77,7 @@ Semua daftar menerima `page` (mulai 1) dan `per_page` (bawaan 20, maksimal 1000)
 | POST | `/perawatan` | Admin | `{ kdo_id, tanggal_servis, jenis_perawatan, biaya, kondisi_setelah, deskripsi?, bengkel?, jadwal_berikutnya? }`; kondisi kendaraan ikut diperbarui |
 | PUT | `/perawatan/{id}` | Admin | |
 | DELETE | `/perawatan/{id}` | Admin | |
-| GET | `/dashboard` | Masuk | Total aset, kondisi, sedang dipakai, aset terbaru, pengingat |
+| GET | `/dashboard` | Masuk | Total aset, kondisi, status pemegang (`pemegang.ada`/`pemegang.tanpa`), pemakaian aktif, aset terbaru, pengingat (servis, dokumen, pembaruan data, `rusak_berat_dipegang`) |
 
 ### Laporan
 

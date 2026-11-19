@@ -261,6 +261,7 @@ Setiap fitur merangkum "Tujuan" dan "Selesai bila" dari berkas fitur sumber. Kri
 | BR-16 | Saat PNS dihapus, pemakaian aktifnya ditutup hari ini; nama dan NIP tersimpan di riwayat. | Tambahan, menjaga riwayat | API |
 | BR-17 | Status PNS tidak dapat diubah dari `aktif` selama masih memegang kendaraan (`409`). | Tambahan, perlu konfirmasi (Q-3) | API |
 | BR-18 | Kendaraan yang masih dipakai tidak dapat dinonaktifkan (`409`). | Tambahan | API |
+| BR-19 | Kendaraan rusak berat boleh tetap punya pemegang sampai diserahkan ke pengurus barang, tetapi tampil di "Perlu perhatian". Status pemegang (ada/tanpa) ditampilkan terpisah dari kondisi. | Keputusan pemilik produk (UAT dashboard) | API + UI |
 | BR-19 | Tanggal servis, tanggal mulai, dan tanggal selesai pemakaian tidak boleh di masa depan; jadwal servis berikutnya harus setelah tanggal servis; biaya tidak negatif. | Fitur 04 "tanggal tidak wajar" | API + DB CHECK |
 | BR-20 | Harus selalu ada minimal satu admin aktif; admin tidak dapat menonaktifkan atau menurunkan perannya sendiri. | Tambahan, mencegah terkunci | API |
 

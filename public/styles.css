@@ -204,11 +204,13 @@ dl.kv dd { margin: 0; font-weight: 500; min-width: 0; overflow-wrap: anywhere; }
 .fleet-caption { font-weight: 700; font-size: 16px; }
 .fleet-caption .sub { font-weight: 400; font-size: 13.5px; margin-top: 2px; }
 .fleet-condition .bar { height: 14px; }
-.condition-links { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin-top: 12px; }
+.condition-links { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: 12px; }
 .cond { display: flex; flex-direction: column; padding: 8px 10px; border-radius: var(--radius); color: var(--text); border: 1px solid var(--border); }
 .cond:hover { text-decoration: none; border-color: var(--control-border); background: var(--surface-2); }
 .cond b { font-size: 22px; line-height: 1.1; font-variant-numeric: tabular-nums; }
 .cond span { font-size: 13px; color: var(--muted); }
+.holder-line { margin: 12px 0 0; font-size: 14px; color: var(--muted); }
+.holder-line a { display: inline-block; padding: 10px 0; }
 .cond.ok b { color: var(--ok); } .cond.warn b { color: var(--warn); } .cond.bad b { color: var(--bad); }
 .dash-grid { display: grid; grid-template-columns: 1.15fr 1fr; grid-template-rows: auto 1fr; gap: 0 16px; }
 .dash-grid .attention { grid-row: span 2; align-self: start; }

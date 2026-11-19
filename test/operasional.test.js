@@ -16,6 +16,9 @@ test('dashboard: jumlah kategori kondisi = total aset; sedang dipakai & aset ter
   assert.equal(d.total_aset, 20);
   assert.equal(d.kondisi.baik + d.kondisi.rusak_ringan + d.kondisi.rusak_berat, d.total_aset);
   assert.equal(d.sedang_dipakai.length, 20);
+  assert.equal(d.pemegang.ada + d.pemegang.tanpa, d.total_aset);
+  // BR-19: dua kendaraan rusak berat di data uji masih dipegang, jadi masuk "Perlu perhatian".
+  assert.equal(d.pengingat.rusak_berat_dipegang.length, d.kondisi.rusak_berat);
   assert.equal(d.aset_terbaru.length, 5);
   assert.deepEqual(d.pengingat.servis, []);
 });
