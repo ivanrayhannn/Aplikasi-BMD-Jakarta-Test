@@ -38,7 +38,7 @@ export const ForbiddenPage = {
   setup: () => ({ role: label('peran', store.user?.role) }),
   template: `<div class="card forbidden" role="alert">
     <h1>Akses ditolak</h1>
-    <p>Halaman ini hanya dapat dibuka oleh <b>Pengelola Aset (admin)</b>. Peran Anda saat ini: <b>{{ role }}</b>.</p>
+    <p>Halaman ini tidak tersedia untuk peran Anda saat ini: <b>{{ role }}</b>. Hubungi Pengelola Aset bila Anda memerlukan akses.</p>
     <a class="btn primary" href="#/dashboard">Kembali ke Dashboard</a>
   </div>`,
 };

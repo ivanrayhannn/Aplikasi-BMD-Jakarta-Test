@@ -15,7 +15,7 @@ export function transaction(db, fn) {
   }
 }
 
-const TABLES = new Set(['perangkat_daerah', 'pns', 'kdo', 'kdo_pemakaian', 'kdo_perawatan', 'users']);
+const TABLES = new Set(['perangkat_daerah', 'pns', 'kdo', 'kdo_pemakaian', 'kdo_perawatan', 'users', 'pengajuan', 'berita_acara', 'kdo_pengembalian']);
 
 /** Ambil satu baris berdasarkan id atau lempar 404. */
 export function findOr404(db, table, id, label) {

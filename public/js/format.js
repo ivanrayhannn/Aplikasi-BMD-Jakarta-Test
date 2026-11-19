@@ -39,6 +39,8 @@ export function tone(group, value) {
     status_kepegawaian: { aktif: 'ok', pensiun: 'muted', mutasi: 'warn', nonaktif: 'muted' },
     status_pemakaian: { aktif: 'ok', selesai: 'muted' },
     status_jadwal: { terlambat: 'bad', segera: 'warn', terjadwal: 'ok' },
+    status_aset: { aktif: 'ok', siaga: 'info', perawatan: 'warn', rusak: 'bad', dihapuskan: 'muted' },
+    status_pengajuan: { diajukan: 'warn', disetujui: 'info', dipesan: 'info', diterima: 'info', selesai: 'ok', ditolak: 'bad', dibatalkan: 'muted' },
   };
   return map[group]?.[value] ?? 'muted';
 }

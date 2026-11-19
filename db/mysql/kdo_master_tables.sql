@@ -66,6 +66,7 @@ CREATE TABLE kdo (
   isi_silinder_cc     INT UNSIGNED NULL,
   bahan_bakar         ENUM('bensin','solar','listrik','hybrid','lainnya') NULL,
   nomor_bpkb          VARCHAR(30)  NULL,
+  nomor_stnk          VARCHAR(30)  NULL,
   masa_berlaku_stnk   DATE         NULL,
   tanggal_pajak       DATE         NULL,
   tanggal_perolehan   DATE         NULL,
@@ -73,6 +74,8 @@ CREATE TABLE kdo (
   kode_barang_aset    VARCHAR(30)  NULL,
   perangkat_daerah_id BIGINT UNSIGNED NOT NULL,
   pemegang_pns_id     BIGINT UNSIGNED NULL,
+  lokasi              VARCHAR(150) NULL,
+  status_aset         ENUM('aktif','siaga','perawatan','rusak','dihapuskan') NOT NULL DEFAULT 'siaga',
   keterangan          TEXT         NULL,
   is_aktif            TINYINT(1)   NOT NULL DEFAULT 1,
   created_at          TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -141,7 +144,7 @@ CREATE TABLE users (
   nama          VARCHAR(150) NOT NULL,
   email         VARCHAR(100) NOT NULL,
   password_hash VARCHAR(255) NOT NULL,
-  role          ENUM('admin','petugas') NOT NULL,
+  role          ENUM('admin','approver','petugas','pegawai') NOT NULL,
   pns_id        BIGINT UNSIGNED NULL,
   is_active     TINYINT(1)   NOT NULL DEFAULT 1,
   created_at    TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -159,6 +162,78 @@ CREATE TABLE sessions (
   PRIMARY KEY (id),
   KEY ix_sessions_user (user_id),
   CONSTRAINT fk_sessions_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+-- Siklus aset: pengajuan dengan approval, berita acara, dan pengembalian.
+CREATE TABLE pengajuan (
+  id                  BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  nomor               VARCHAR(30)  NOT NULL,
+  jenis               ENUM('pengadaan','penugasan','pengembalian','mutasi','disposal') NOT NULL,
+  status              ENUM('diajukan','disetujui','dipesan','diterima','selesai','ditolak','dibatalkan') NOT NULL DEFAULT 'diajukan',
+  kdo_id              BIGINT UNSIGNED NULL,
+  pns_id              BIGINT UNSIGNED NULL,
+  perangkat_daerah_id BIGINT UNSIGNED NULL,
+  alasan              TEXT         NOT NULL,
+  detail              JSON         NOT NULL,
+  diajukan_oleh       BIGINT UNSIGNED NULL,
+  diajukan_pada       DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  diputus_oleh        BIGINT UNSIGNED NULL,
+  diputus_pada        DATETIME     NULL,
+  catatan_keputusan   TEXT         NULL,
+  diselesaikan_oleh   BIGINT UNSIGNED NULL,
+  diselesaikan_pada   DATETIME     NULL,
+  updated_at          TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uk_pengajuan_nomor (nomor),
+  KEY ix_pengajuan_status (status, jenis),
+  CONSTRAINT fk_pengajuan_kdo FOREIGN KEY (kdo_id) REFERENCES kdo (id) ON DELETE CASCADE,
+  CONSTRAINT fk_pengajuan_pns FOREIGN KEY (pns_id) REFERENCES pns (id) ON DELETE SET NULL,
+  CONSTRAINT fk_pengajuan_pd FOREIGN KEY (perangkat_daerah_id) REFERENCES perangkat_daerah (id) ON DELETE RESTRICT,
+  CONSTRAINT fk_pengajuan_pemohon FOREIGN KEY (diajukan_oleh) REFERENCES users (id) ON DELETE SET NULL,
+  CONSTRAINT fk_pengajuan_pemutus FOREIGN KEY (diputus_oleh) REFERENCES users (id) ON DELETE SET NULL,
+  CONSTRAINT fk_pengajuan_penyelesai FOREIGN KEY (diselesaikan_oleh) REFERENCES users (id) ON DELETE SET NULL
+) ENGINE=InnoDB;
+
+CREATE TABLE berita_acara (
+  id            BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  nomor         VARCHAR(30)  NOT NULL,
+  jenis         ENUM('serah_terima','pengembalian','mutasi','penghapusan','penerimaan') NOT NULL,
+  tanggal       DATE         NOT NULL,
+  kdo_id        BIGINT UNSIGNED NULL,
+  pengajuan_id  BIGINT UNSIGNED NULL,
+  pihak_pertama VARCHAR(200) NOT NULL,
+  pihak_kedua   VARCHAR(200) NOT NULL,
+  uraian        TEXT         NOT NULL,
+  dibuat_oleh   BIGINT UNSIGNED NULL,
+  created_at    TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uk_ba_nomor (nomor),
+  CONSTRAINT fk_ba_kdo FOREIGN KEY (kdo_id) REFERENCES kdo (id) ON DELETE CASCADE,
+  CONSTRAINT fk_ba_pengajuan FOREIGN KEY (pengajuan_id) REFERENCES pengajuan (id) ON DELETE SET NULL,
+  CONSTRAINT fk_ba_pembuat FOREIGN KEY (dibuat_oleh) REFERENCES users (id) ON DELETE SET NULL
+) ENGINE=InnoDB;
+
+CREATE TABLE kdo_pengembalian (
+  id                  BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  kdo_id              BIGINT UNSIGNED NOT NULL,
+  pemakaian_id        BIGINT UNSIGNED NOT NULL,
+  pengajuan_id        BIGINT UNSIGNED NULL,
+  berita_acara_id     BIGINT UNSIGNED NULL,
+  tanggal_kembali     DATE         NOT NULL,
+  alasan              TEXT         NOT NULL,
+  kondisi_hasil_cek   ENUM('baik','rusak_ringan','rusak_berat') NOT NULL,
+  kilometer           INT UNSIGNED NULL,
+  kelengkapan         JSON         NOT NULL,
+  catatan_pemeriksaan TEXT         NULL,
+  diserahkan_oleh     VARCHAR(150) NOT NULL,
+  diterima_oleh       VARCHAR(150) NOT NULL,
+  created_at          TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uk_pengembalian_pemakaian (pemakaian_id),
+  CONSTRAINT fk_kembali_kdo FOREIGN KEY (kdo_id) REFERENCES kdo (id) ON DELETE CASCADE,
+  CONSTRAINT fk_kembali_pemakaian FOREIGN KEY (pemakaian_id) REFERENCES kdo_pemakaian (id) ON DELETE CASCADE,
+  CONSTRAINT fk_kembali_pengajuan FOREIGN KEY (pengajuan_id) REFERENCES pengajuan (id) ON DELETE SET NULL,
+  CONSTRAINT fk_kembali_ba FOREIGN KEY (berita_acara_id) REFERENCES berita_acara (id) ON DELETE SET NULL
 ) ENGINE=InnoDB;
 
 CREATE TABLE settings (

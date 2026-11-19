@@ -14,6 +14,8 @@ export const store = reactive({
 });
 
 export const isAdmin = computed(() => store.user?.role === 'admin');
+export const isApprover = computed(() => store.user?.role === 'approver');
+export const isPegawai = computed(() => store.user?.role === 'pegawai');
 
 let toastTimer;
 /** Tampilkan notifikasi singkat. */

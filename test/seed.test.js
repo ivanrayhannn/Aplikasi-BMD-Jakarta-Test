@@ -20,5 +20,15 @@ test('dengan data uji: sesuai ringkasan berkas sumber', () => {
   const k = db.prepare(`SELECT COUNT(*) AS n, SUM(nilai_perolehan) AS nilai, SUM(kondisi = 'baik') AS baik,
     SUM(kondisi = 'rusak_ringan') AS rr, SUM(kondisi = 'rusak_berat') AS rb FROM kdo`).get();
   assert.deepEqual({ ...k }, { n: 20, nilai: 11_215_600_000, baik: 15, rr: 3, rb: 2 });
-  assert.equal(db.prepare("SELECT COUNT(*) AS n FROM kdo_pemakaian WHERE status = 'aktif'").get().n, 20);
+  // Dua kendaraan sudah dikembalikan di contoh siklus aset (B 3871 PQD siaga, B 3920 PQJ rusak).
+  assert.equal(db.prepare("SELECT COUNT(*) AS n FROM kdo_pemakaian WHERE status = 'aktif'").get().n, 18);
+  // Data uji dilengkapi: tidak ada kolom identitas/legalitas yang kosong.
+  const kosong = db.prepare(`SELECT COUNT(*) AS n FROM kdo WHERE nomor_mesin IS NULL OR nomor_stnk IS NULL OR nomor_bpkb IS NULL
+    OR masa_berlaku_stnk IS NULL OR tanggal_pajak IS NULL OR tanggal_perolehan IS NULL OR warna IS NULL OR bahan_bakar IS NULL OR lokasi IS NULL`).get().n;
+  assert.equal(kosong, 0);
+  const status = Object.fromEntries(db.prepare('SELECT status_aset, COUNT(*) AS n FROM kdo GROUP BY status_aset').all().map((r) => [r.status_aset, r.n]));
+  assert.deepEqual(status, { aktif: 16, perawatan: 1, rusak: 2, siaga: 1 });
+  const pg = db.prepare("SELECT jenis || ':' || status AS k FROM pengajuan ORDER BY id").all().map((r) => r.k);
+  assert.deepEqual(pg, ['disposal:disetujui', 'penugasan:diajukan', 'mutasi:diajukan', 'pengadaan:dipesan', 'pengadaan:ditolak']);
+  assert.equal(db.prepare('SELECT COUNT(*) AS n FROM berita_acara').get().n, 2);
 });

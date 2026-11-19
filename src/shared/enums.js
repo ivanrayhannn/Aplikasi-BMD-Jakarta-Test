@@ -82,7 +82,61 @@ export const STATUS_PEMAKAIAN = options([
 
 export const PERAN = options([
   ['admin', 'Pengelola Aset (Admin)'],
+  ['approver', 'Approver'],
   ['petugas', 'Petugas Lapangan'],
+  ['pegawai', 'Pegawai'],
+]);
+
+/** Status siklus hidup aset, terpisah dari kondisi fisik (KONDISI). */
+export const STATUS_ASET = options([
+  ['aktif', 'Aktif (dipakai)'],
+  ['siaga', 'Siaga (standby)'],
+  ['perawatan', 'Dalam Perawatan'],
+  ['rusak', 'Rusak'],
+  ['dihapuskan', 'Dihapuskan'],
+]);
+
+/** Jenis pengajuan siklus aset. Pengembalian tidak butuh approval; jenis lain wajib disetujui Approver. */
+export const JENIS_PENGAJUAN = options([
+  ['pengadaan', 'Pengadaan'],
+  ['penugasan', 'Penugasan Pemegang'],
+  ['pengembalian', 'Pengembalian Aset'],
+  ['mutasi', 'Mutasi'],
+  ['disposal', 'Disposal'],
+]);
+
+export const STATUS_PENGAJUAN = options([
+  ['diajukan', 'Menunggu Persetujuan'],
+  ['disetujui', 'Disetujui'],
+  ['dipesan', 'PR/PO Terbit'],
+  ['diterima', 'Unit Diterima'],
+  ['selesai', 'Selesai'],
+  ['ditolak', 'Ditolak'],
+  ['dibatalkan', 'Dibatalkan'],
+]);
+
+export const METODE_DISPOSAL = options([
+  ['penjualan', 'Penjualan'],
+  ['lelang', 'Lelang'],
+  ['scrap', 'Scrap / Dimusnahkan'],
+]);
+
+export const JENIS_BERITA_ACARA = options([
+  ['serah_terima', 'Serah Terima'],
+  ['pengembalian', 'Pengembalian'],
+  ['mutasi', 'Mutasi'],
+  ['penghapusan', 'Penghapusan'],
+  ['penerimaan', 'Penerimaan Barang'],
+]);
+
+/** Kelengkapan yang diperiksa saat pengembalian dan penerimaan unit. */
+export const KELENGKAPAN = options([
+  ['stnk', 'STNK'],
+  ['kunci', 'Kunci utama'],
+  ['kunci_cadangan', 'Kunci cadangan'],
+  ['buku_servis', 'Buku servis'],
+  ['ban_serep', 'Ban serep'],
+  ['dongkrak', 'Dongkrak & toolkit'],
 ]);
 
 /** Kelompok yang ditampilkan di halaman Pengaturan → Pilihan Terkendali. */
@@ -97,6 +151,12 @@ export const ENUMS = Object.freeze({
   jenis_perawatan: JENIS_PERAWATAN,
   status_pemakaian: STATUS_PEMAKAIAN,
   peran: PERAN,
+  status_aset: STATUS_ASET,
+  jenis_pengajuan: JENIS_PENGAJUAN,
+  status_pengajuan: STATUS_PENGAJUAN,
+  metode_disposal: METODE_DISPOSAL,
+  jenis_berita_acara: JENIS_BERITA_ACARA,
+  kelengkapan: KELENGKAPAN,
 });
 
 export const values = (opts) => opts.map((o) => o.value);

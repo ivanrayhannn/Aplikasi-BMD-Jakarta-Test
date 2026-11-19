@@ -12,6 +12,7 @@ import * as dashboard from './modules/dashboard.js';
 import * as laporan from './modules/laporan.js';
 import * as pengguna from './modules/pengguna.js';
 import * as pengaturan from './modules/pengaturan.js';
+import * as siklus from './modules/siklus.js';
 
 export const BASE = '/api/v1';
 
@@ -46,17 +47,34 @@ export function registerApi(app, db, security) {
     next();
   });
 
-  // Otorisasi: petugas lapangan hanya dapat melihat data (fitur 06 "Peran & Izin").
+  // Otorisasi per peran (fitur 06 "Peran & Izin"). Aksi tulis milik admin, kecuali yang terdaftar di WRITE;
+  // pemeriksaan lebih rinci (mis. approver tidak memutus pengajuannya sendiri) ada di modul.
+  const ALL = ['admin', 'approver', 'petugas', 'pegawai'];
+  const WRITE = [
+    [/^\/auth\/logout$/, ALL],
+    [/^\/pengajuan$/, ['admin', 'pegawai']],
+    [/^\/pengajuan\/\d+\/(setujui|tolak)$/, ['approver']],
+    [/^\/pengajuan\/\d+\/batal$/, ['admin', 'pegawai']],
+  ];
+  // BR-26: pegawai hanya membaca kendaraan, pengajuan, dan berita acara miliknya (dibatasi lagi di modul).
+  const PEGAWAI_READ = /^\/(auth|kdo|pengajuan|berita-acara|pengaturan)(\/|$)/;
   app.use(BASE, (req, res, next) => {
+    const path = req.originalUrl.split('?')[0].slice(BASE.length);
     const isWrite = !['GET', 'HEAD', 'OPTIONS'].includes(req.method);
-    const selfService = req.originalUrl.split('?')[0] === `${BASE}/auth/logout`;
-    if (isWrite && !selfService && req.user.role !== 'admin') {
-      throw forbidden('Peran Petugas Lapangan hanya dapat melihat data');
+    const role = req.user.role;
+    if (isWrite) {
+      const rule = WRITE.find(([re]) => re.test(path));
+      const allowed = rule ? rule[1] : ['admin'];
+      if (!allowed.includes(role)) {
+        throw forbidden(role === 'petugas' ? 'Peran Petugas Lapangan hanya dapat melihat data' : 'Peran Anda tidak memiliki hak untuk tindakan ini');
+      }
+    } else if (role === 'pegawai' && !PEGAWAI_READ.test(path)) {
+      throw forbidden('Peran Pegawai hanya dapat melihat kendaraan dan pengajuan miliknya');
     }
     next();
   });
 
-  for (const mod of [auth, dashboard, perangkatDaerah, pns, kdo, pemakaian, perawatan, laporan, pengguna, pengaturan]) {
+  for (const mod of [auth, dashboard, perangkatDaerah, pns, kdo, pemakaian, perawatan, laporan, pengguna, pengaturan, siklus]) {
     mod.register(app, ctx);
   }
 

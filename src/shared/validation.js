@@ -3,7 +3,7 @@
 // dinormalisasi beserta pesan error per field, sehingga pesan di form dan di respons API selalu sama.
 import {
   KONDISI, JENIS_KENDARAAN, PERUNTUKAN, BAHAN_BAKAR, GOLONGAN, JENIS_KELAMIN,
-  STATUS_KEPEGAWAIAN, JENIS_PERAWATAN, PERAN, values,
+  STATUS_KEPEGAWAIAN, JENIS_PERAWATAN, PERAN, STATUS_ASET, JENIS_PENGAJUAN, METODE_DISPOSAL, KELENGKAPAN, values,
 } from './enums.js';
 
 export const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
@@ -71,6 +71,15 @@ const id = (label, { required } = {}) =>
     return n;
   }, { required });
 
+/** Daftar nilai ENUM (mis. kelengkapan yang dicentang). */
+const many = (label, opts) =>
+  rule(label, (v) => {
+    const list = Array.isArray(v) ? v : String(v).split(',').filter(Boolean);
+    const bad = list.find((x) => !values(opts).includes(x));
+    if (bad) throw `${label} tidak dikenal: ${bad}`;
+    return [...new Set(list)];
+  });
+
 const bool = (label, fallback = 1) =>
   rule(label, (v) => (v === true || v === 1 || v === '1' || v === 'true' ? 1 : 0), { fallback });
 
@@ -120,6 +129,7 @@ export const schemas = {
     isi_silinder_cc: integer('Isi silinder', { min: 0, max: 100_000 }),
     bahan_bakar: oneOf('Bahan bakar', BAHAN_BAKAR),
     nomor_bpkb: text('Nomor BPKB', { max: 30, transform: (s) => s.toUpperCase() }),
+    nomor_stnk: text('Nomor STNK', { max: 30, transform: (s) => s.toUpperCase() }),
     masa_berlaku_stnk: date('Masa berlaku STNK'),
     tanggal_pajak: date('Tanggal pajak'),
     tanggal_perolehan: date('Tanggal perolehan', { notFuture: true }),
@@ -127,8 +137,81 @@ export const schemas = {
     kode_barang_aset: text('Kode barang aset', { max: 30 }),
     perangkat_daerah_id: id('Perangkat daerah', { required: true }),
     pemegang_pns_id: id('Pemegang'),
+    lokasi: text('Lokasi', { max: 150 }),
+    status_aset: oneOf('Status aset', STATUS_ASET),
+    pengajuan_id: id('Pengajuan pengadaan'),
     keterangan: text('Keterangan', { max: 2000 }),
     is_aktif: bool('Status aktif'),
+  },
+
+  // Siklus aset. Field yang tidak relevan untuk suatu jenis diabaikan oleh modul pengajuan.
+  pengajuan: {
+    jenis: oneOf('Jenis pengajuan', JENIS_PENGAJUAN, { required: true }),
+    kdo_id: id('Kendaraan'),
+    pns_id: id('Pegawai'),
+    perangkat_daerah_id: id('Perangkat daerah'),
+    alasan: text('Alasan / kebutuhan', { required: true, max: 1000 }),
+    lokasi_tujuan: text('Lokasi tujuan', { max: 150 }),
+    jenis_kendaraan: oneOf('Jenis kendaraan', JENIS_KENDARAAN),
+    jumlah: integer('Jumlah unit', { min: 1, max: 100 }),
+    spesifikasi: text('Spesifikasi', { max: 1000 }),
+    estimasi_biaya: decimal('Estimasi biaya'),
+    metode: oneOf('Metode disposal', METODE_DISPOSAL),
+    nilai_taksiran: decimal('Nilai taksiran'),
+    tanggal_dibutuhkan: date('Tanggal dibutuhkan'),
+  },
+
+  keputusan: {
+    catatan: text('Catatan', { max: 1000 }),
+  },
+
+  prosesPenugasan: {
+    kdo_id: id('Kendaraan', { required: true }),
+    tanggal: date('Tanggal serah terima', { required: true, notFuture: true }),
+    diserahkan_oleh: text('Diserahkan oleh', { required: true, max: 150 }),
+    catatan: text('Catatan', { max: 1000 }),
+  },
+
+  prosesMutasi: {
+    tanggal: date('Tanggal mutasi', { required: true, notFuture: true }),
+    diserahkan_oleh: text('Diserahkan oleh', { required: true, max: 150 }),
+    diterima_oleh: text('Diterima oleh', { required: true, max: 150 }),
+    catatan: text('Catatan', { max: 1000 }),
+  },
+
+  prosesDisposal: {
+    tanggal: date('Tanggal pelaksanaan', { required: true, notFuture: true }),
+    nilai_jual: decimal('Nilai jual', { required: true }),
+    nomor_dokumen: text('Nomor dokumen', { required: true, max: 60 }),
+    pembeli: text('Pembeli / pemenang lelang', { max: 150 }),
+    catatan: text('Catatan', { max: 1000 }),
+  },
+
+  prosesPo: {
+    nomor_pr: text('Nomor PR', { required: true, max: 40, transform: (s) => s.toUpperCase() }),
+    nomor_po: text('Nomor PO', { required: true, max: 40, transform: (s) => s.toUpperCase() }),
+    vendor: text('Vendor', { required: true, max: 150 }),
+    tanggal_po: date('Tanggal PO', { required: true, notFuture: true }),
+    nilai_po: decimal('Nilai PO', { required: true }),
+  },
+
+  prosesPenerimaan: {
+    tanggal_terima: date('Tanggal terima', { required: true, notFuture: true }),
+    diserahkan_oleh: text('Diserahkan oleh (vendor)', { required: true, max: 150 }),
+    kelengkapan: many('Kelengkapan', KELENGKAPAN),
+    catatan: text('Catatan penerimaan', { max: 1000 }),
+  },
+
+  pengembalian: {
+    kdo_id: id('Kendaraan', { required: true }),
+    pengajuan_id: id('Pengajuan pengembalian'),
+    tanggal_kembali: date('Tanggal kembali', { required: true, notFuture: true }),
+    alasan: text('Alasan pengembalian', { required: true, max: 500 }),
+    kondisi_hasil_cek: oneOf('Kondisi hasil pemeriksaan', KONDISI, { required: true }),
+    kilometer: integer('Kilometer', { min: 0, max: 9_999_999 }),
+    kelengkapan: many('Kelengkapan', KELENGKAPAN),
+    catatan_pemeriksaan: text('Catatan pemeriksaan', { max: 1000 }),
+    diterima_oleh: text('Diterima oleh', { required: true, max: 150 }),
   },
 
   pemakaian: {

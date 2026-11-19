@@ -3,12 +3,16 @@
 // Padanan MySQL 8.4 untuk produksi: db/mysql/kdo_master_tables.sql. Jaga keduanya tetap selaras.
 import {
   KONDISI, JENIS_KENDARAAN, PERUNTUKAN, BAHAN_BAKAR, GOLONGAN, JENIS_KELAMIN,
-  STATUS_KEPEGAWAIAN, JENIS_PERAWATAN, STATUS_PEMAKAIAN, PERAN, values,
+  STATUS_KEPEGAWAIAN, JENIS_PERAWATAN, STATUS_PEMAKAIAN, PERAN, STATUS_ASET, JENIS_PENGAJUAN, STATUS_PENGAJUAN,
+  JENIS_BERITA_ACARA, values,
 } from '../shared/enums.js';
 import { transaction } from './db.js';
 import { SKPD, PEGAWAI, KENDARAAN } from './seed-data.js';
+import { lengkapiKendaraan, addDays } from './seed-lengkap.js';
+import { createPengajuan, decide, getPengajuan, prosesPengajuan, returnAsset } from './modules/siklus.js';
+import { today } from '../shared/validation.js';
 
-export const SCHEMA_VERSION = 4;
+export const SCHEMA_VERSION = 5;
 
 /** ENUM MySQL ditiru dengan CHECK constraint yang dibangkitkan dari shared/enums.js. */
 const check = (column, opts, nullable = false) =>
@@ -60,6 +64,7 @@ CREATE TABLE IF NOT EXISTS kdo (
   isi_silinder_cc     INTEGER CHECK (isi_silinder_cc IS NULL OR isi_silinder_cc >= 0),
   bahan_bakar         TEXT ${check('bahan_bakar', BAHAN_BAKAR, true)},
   nomor_bpkb          TEXT,
+  nomor_stnk          TEXT,
   masa_berlaku_stnk   TEXT,
   tanggal_pajak       TEXT,
   tanggal_perolehan   TEXT,
@@ -67,6 +72,8 @@ CREATE TABLE IF NOT EXISTS kdo (
   kode_barang_aset    TEXT,
   perangkat_daerah_id INTEGER NOT NULL REFERENCES perangkat_daerah(id) ON DELETE RESTRICT,
   pemegang_pns_id     INTEGER REFERENCES pns(id) ON DELETE SET NULL,
+  lokasi              TEXT,
+  status_aset         TEXT NOT NULL DEFAULT 'siaga' ${check('status_aset', STATUS_ASET)},
   keterangan          TEXT,
   is_aktif            INTEGER NOT NULL DEFAULT 1 CHECK (is_aktif IN (0, 1)),
   created_at          TEXT NOT NULL DEFAULT (datetime('now')),
@@ -130,6 +137,64 @@ CREATE TABLE IF NOT EXISTS sessions (
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
+-- Pengajuan siklus aset (pengadaan, penugasan, pengembalian, mutasi, disposal) dengan approval.
+-- Kolom kunci untuk relasi dan filter; isian khusus per jenis (spesifikasi, PR/PO, nilai jual) di kolom JSON detail.
+CREATE TABLE IF NOT EXISTS pengajuan (
+  id                  INTEGER PRIMARY KEY,
+  nomor               TEXT NOT NULL UNIQUE,
+  jenis               TEXT NOT NULL ${check('jenis', JENIS_PENGAJUAN)},
+  status              TEXT NOT NULL DEFAULT 'diajukan' ${check('status', STATUS_PENGAJUAN)},
+  kdo_id              INTEGER REFERENCES kdo(id) ON DELETE CASCADE,
+  pns_id              INTEGER REFERENCES pns(id) ON DELETE SET NULL,
+  perangkat_daerah_id INTEGER REFERENCES perangkat_daerah(id) ON DELETE RESTRICT,
+  alasan              TEXT NOT NULL,
+  detail              TEXT NOT NULL DEFAULT '{}',
+  diajukan_oleh       INTEGER REFERENCES users(id) ON DELETE SET NULL,
+  diajukan_pada       TEXT NOT NULL DEFAULT (datetime('now')),
+  diputus_oleh        INTEGER REFERENCES users(id) ON DELETE SET NULL,
+  diputus_pada        TEXT,
+  catatan_keputusan   TEXT,
+  diselesaikan_oleh   INTEGER REFERENCES users(id) ON DELETE SET NULL,
+  diselesaikan_pada   TEXT,
+  updated_at          TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS ix_pengajuan_status ON pengajuan(status, jenis);
+CREATE INDEX IF NOT EXISTS ix_pengajuan_kdo ON pengajuan(kdo_id);
+
+-- Berita acara (BAST): bukti serah terima, pengembalian, mutasi, penghapusan, dan penerimaan barang.
+CREATE TABLE IF NOT EXISTS berita_acara (
+  id            INTEGER PRIMARY KEY,
+  nomor         TEXT NOT NULL UNIQUE,
+  jenis         TEXT NOT NULL ${check('jenis', JENIS_BERITA_ACARA)},
+  tanggal       TEXT NOT NULL,
+  kdo_id        INTEGER REFERENCES kdo(id) ON DELETE CASCADE,
+  pengajuan_id  INTEGER REFERENCES pengajuan(id) ON DELETE SET NULL,
+  pihak_pertama TEXT NOT NULL,
+  pihak_kedua   TEXT NOT NULL,
+  uraian        TEXT NOT NULL,
+  dibuat_oleh   INTEGER REFERENCES users(id) ON DELETE SET NULL,
+  created_at    TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS ix_ba_kdo ON berita_acara(kdo_id);
+
+-- Pengembalian aset: menutup penugasan, memuat hasil pemeriksaan unit dan serah terima.
+CREATE TABLE IF NOT EXISTS kdo_pengembalian (
+  id                  INTEGER PRIMARY KEY,
+  kdo_id              INTEGER NOT NULL REFERENCES kdo(id) ON DELETE CASCADE,
+  pemakaian_id        INTEGER NOT NULL UNIQUE REFERENCES kdo_pemakaian(id) ON DELETE CASCADE,
+  pengajuan_id        INTEGER REFERENCES pengajuan(id) ON DELETE SET NULL,
+  berita_acara_id     INTEGER REFERENCES berita_acara(id) ON DELETE SET NULL,
+  tanggal_kembali     TEXT NOT NULL,
+  alasan              TEXT NOT NULL,
+  kondisi_hasil_cek   TEXT NOT NULL ${check('kondisi_hasil_cek', KONDISI)},
+  kilometer           INTEGER CHECK (kilometer IS NULL OR kilometer >= 0),
+  kelengkapan         TEXT NOT NULL DEFAULT '[]',
+  catatan_pemeriksaan TEXT,
+  diserahkan_oleh     TEXT NOT NULL,
+  diterima_oleh       TEXT NOT NULL,
+  created_at          TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
 -- Satu baris pengaturan (id = 1).
 CREATE TABLE IF NOT EXISTS settings (
   id                       INTEGER PRIMARY KEY CHECK (id = 1),
@@ -165,7 +230,8 @@ export function initDatabase(db, hashPassword, { sampleData = true } = {}) {
   const version = db.prepare('PRAGMA user_version').get()?.user_version ?? 0;
   if (version !== 0 && version !== SCHEMA_VERSION) {
     // Belum ada data produksi; database versi lama dibuat ulang dengan skema dan data awal terbaru.
-    for (const t of ['log_aktivitas', 'sessions', 'settings', 'kdo_perawatan', 'kdo_pemakaian', 'users', 'kdo', 'pns', 'perangkat_daerah',
+    for (const t of ['kdo_pengembalian', 'berita_acara', 'pengajuan',
+      'log_aktivitas', 'sessions', 'settings', 'kdo_perawatan', 'kdo_pemakaian', 'users', 'kdo', 'pns', 'perangkat_daerah',
       'sesi', 'penanggung_jawab', 'pemeriksaan_kondisi', 'kendaraan', 'pegawai', 'pengguna']) {
       db.exec(`DROP TABLE IF EXISTS ${t}`);
     }
@@ -207,17 +273,24 @@ function seedSample(db, hashPassword) {
     pnsByNip.set(p.nip, { id, ...p });
   }
 
+  const hariIni = today();
   const kdo = db.prepare(`INSERT INTO kdo (kode_barang_aset, nomor_polisi, merek, tipe, jenis_kendaraan, peruntukan, tahun_produksi,
-    nomor_rangka, kondisi, nilai_perolehan, keterangan, perangkat_daerah_id, pemegang_pns_id) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`);
-  // Sumber tidak memuat tanggal penugasan, jadi pemakaian aktif dicatat sejak data dimuat.
+    nomor_rangka, kondisi, nilai_perolehan, keterangan, perangkat_daerah_id, pemegang_pns_id, status_aset,
+    nomor_mesin, nomor_stnk, nomor_bpkb, isi_silinder_cc, bahan_bakar, warna, tanggal_perolehan, tanggal_pajak, masa_berlaku_stnk, lokasi)
+    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`);
+  // Sumber tidak memuat tanggal penugasan; penugasan awal dicatat 180 hari sebelum data dimuat.
   const pakai = db.prepare(`INSERT INTO kdo_pemakaian (kdo_id, pns_id, pns_nama, pns_nip, tanggal_mulai, status, keterangan)
-    VALUES (?,?,?,?,date('now','localtime'),'aktif','Penetapan pemegang dari data awal')`);
-  for (const k of KENDARAAN) {
+    VALUES (?,?,?,?,?,'aktif','Penetapan pemegang dari data awal')`);
+  KENDARAAN.forEach((k, i) => {
     const pemegang = pnsByNip.get(k.pemegang_nip);
+    const x = lengkapiKendaraan(k, i, hariIni);
+    const status = k.kondisi === 'rusak_berat' ? 'rusak' : k.nomor_polisi === 'B 9620 PQE' ? 'perawatan' : 'aktif';
     const id = kdo.run(k.kode_barang_aset, k.nomor_polisi, k.merek, k.tipe, k.jenis_kendaraan, k.peruntukan, k.tahun_produksi, k.nomor_rangka,
-      k.kondisi, k.nilai_perolehan, k.keterangan, pdBySingkatan.get(k.skpd), pemegang.id).lastInsertRowid;
-    pakai.run(id, pemegang.id, pemegang.nama_pegawai, pemegang.nip);
-  }
+      k.kondisi, k.nilai_perolehan, k.keterangan, pdBySingkatan.get(k.skpd), pemegang.id, status,
+      x.nomor_mesin, x.nomor_stnk, x.nomor_bpkb, x.isi_silinder_cc, x.bahan_bakar, x.warna, x.tanggal_perolehan, x.tanggal_pajak,
+      x.masa_berlaku_stnk, x.lokasi).lastInsertRowid;
+    pakai.run(id, pemegang.id, pemegang.nama_pegawai, pemegang.nip, addDays(hariIni, -180));
+  });
 
   // Dua catatan perawatan uji (diminta pemilik produk); kondisi setelah servis sama dengan kondisi di data sumber.
   const rawat = db.prepare(`INSERT INTO kdo_perawatan (kdo_id, tanggal_servis, jenis_perawatan, deskripsi, bengkel, biaya, kondisi_setelah, jadwal_berikutnya)
@@ -225,7 +298,51 @@ function seedSample(db, hashPassword) {
   rawat.run('-45 days', 'rutin', 'Servis berkala 40.000 km, ganti oli dan filter', 'Bengkel resmi Toyota', 1_350_000, 'baik', '+135 days', 'B 1426 PQA');
   rawat.run('-20 days', 'perbaikan', 'Penggantian kampas rem dan rotor depan', 'Bengkel resmi Toyota', 2_150_000, 'rusak_ringan', '+70 days', 'B 1482 PQM');
 
+  const addUser = db.prepare('INSERT INTO users (nama, email, password_hash, role, pns_id) VALUES (?,?,?,?,?)');
   const putri = pnsByNip.get('199404302019032008');
-  db.prepare('INSERT INTO users (nama, email, password_hash, role, pns_id) VALUES (?,?,?,?,?)')
-    .run(putri.nama_pegawai, 'petugas@kdo.test', hashPassword('petugas12345'), 'petugas', putri.id);
+  addUser.run(putri.nama_pegawai, 'petugas@kdo.test', hashPassword('petugas12345'), 'petugas', putri.id);
+  const ratna = pnsByNip.get('198409192011012007');
+  const approverId = addUser.run(ratna.nama_pegawai, 'approver@kdo.test', hashPassword('approver12345'), 'approver', ratna.id).lastInsertRowid;
+  const bambang = pnsByNip.get('197803142005011008');
+  addUser.run(bambang.nama_pegawai, 'pegawai@kdo.test', hashPassword('pegawai12345'), 'pegawai', bambang.id);
+  seedSiklus(db, { hariIni, approver: { id: Number(approverId), role: 'approver' }, pnsByNip, penerima: `${ratna.nama_pegawai} (${ratna.jabatan})` });
+}
+
+/** Contoh siklus aset untuk UAT: pengembalian, disposal, penugasan, mutasi, dan pengadaan pada berbagai tahap. */
+function seedSiklus(db, { hariIni, approver, pnsByNip, penerima }) {
+  const admin = { id: 1, role: 'admin', nama: 'Pengelola Aset' };
+  const kdo = (nopol) => db.prepare('SELECT * FROM kdo WHERE nomor_polisi = ?').get(nopol);
+  const pd = (singkatan) => db.prepare('SELECT id FROM perangkat_daerah WHERE singkatan = ?').get(singkatan).id;
+  const tgl = (days) => addDays(hariIni, days);
+  const ajukan = (data, days) => getPengajuan(db, createPengajuan(db, data, admin, { diajukan_pada: `${tgl(days)} 09:15:00` }));
+
+  returnAsset(db, kdo('B 3871 PQD'), {
+    tanggal_kembali: tgl(-20), alasan: 'Kendaraan roda dua tidak lagi dibutuhkan untuk tugas lapangan', kondisi_hasil_cek: 'baik',
+    kilometer: 18_420, kelengkapan: ['stnk', 'kunci', 'kunci_cadangan', 'buku_servis'], catatan_pemeriksaan: 'Bodi mulus, ban belakang tersisa 60%', diterima_oleh: penerima,
+  }, admin.id);
+  returnAsset(db, kdo('B 3920 PQJ'), {
+    tanggal_kembali: tgl(-12), alasan: 'Rangka patah akibat kecelakaan saat patroli saluran', kondisi_hasil_cek: 'rusak_berat',
+    kilometer: 23_105, kelengkapan: ['stnk', 'kunci'], catatan_pemeriksaan: 'Rangka depan patah, garpu bengkok, mesin masih hidup', diterima_oleh: penerima,
+  }, admin.id);
+
+  const disposal = ajukan({ jenis: 'disposal', kdo_id: kdo('B 3920 PQJ').id, metode: 'lelang', nilai_taksiran: 8_500_000,
+    alasan: 'Rusak berat; biaya perbaikan melebihi 50% nilai buku' }, -10);
+  decide(db, disposal, approver, true, 'Setuju dilelang melalui KPKNL');
+
+  ajukan({ jenis: 'penugasan', pns_id: pnsByNip.get('198612152010012014').id, kdo_id: kdo('B 3871 PQD').id, tanggal_dibutuhkan: tgl(5),
+    alasan: 'Kendaraan operasional untuk monitoring UMKM binaan di lima wilayah kota' }, -2);
+
+  ajukan({ jenis: 'mutasi', kdo_id: kdo('B 9547 PQC').id, perangkat_daerah_id: pd('Distamhut'), pns_id: pnsByNip.get('198305052009011015').id,
+    lokasi_tujuan: 'Pembibitan Distamhut Cilandak', alasan: 'Pick up dibutuhkan untuk angkut bibit tanaman; DLH sudah menerima armada pengganti' }, -3);
+
+  const ambulans = ajukan({ jenis: 'pengadaan', perangkat_daerah_id: pd('Dinkes'), jenis_kendaraan: 'ambulans', jumlah: 1, estimasi_biaya: 820_000_000,
+    spesifikasi: 'Ambulans transport 4x2 diesel, AC, tandu otomatis, sesuai standar Kemenkes', tanggal_dibutuhkan: tgl(30),
+    alasan: 'Pengganti ambulans tahun 2012 yang sudah dihapuskan' }, -40);
+  decide(db, ambulans, approver, true, 'Sesuai RKBMD 2026');
+  prosesPengajuan(db, getPengajuan(db, ambulans.id), { nomor_pr: 'PR-DINKES-2026-0145', nomor_po: 'PO-2026-0088',
+    vendor: 'PT Karya Medika Otomotif', tanggal_po: tgl(-25), nilai_po: 812_500_000 }, admin);
+
+  const trail = ajukan({ jenis: 'pengadaan', perangkat_daerah_id: pd('Satpol PP'), jenis_kendaraan: 'roda_2', jumlah: 4, estimasi_biaya: 160_000_000,
+    spesifikasi: 'Motor trail 150 cc untuk patroli kawasan padat', alasan: 'Penambahan armada patroli wilayah' }, -15);
+  decide(db, trail, approver, false, 'Anggaran 2026 sudah terkunci; ajukan kembali pada perubahan APBD');
 }

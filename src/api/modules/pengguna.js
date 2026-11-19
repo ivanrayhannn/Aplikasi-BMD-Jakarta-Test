@@ -12,6 +12,7 @@ function parse(db, body, { creating }) {
   const all = { ...(errors ?? {}) };
   if (creating && !data.password && !all.password) all.password = 'Kata sandi awal wajib diisi';
   if (data.pns_id && !db.prepare('SELECT id FROM pns WHERE id = ?').get(data.pns_id)) all.pns_id = 'Pegawai tidak ditemukan';
+  if (data.role === 'pegawai' && !data.pns_id && !all.pns_id) all.pns_id = 'Akun peran Pegawai wajib ditautkan ke data PNS';
   if (Object.keys(all).length) throw invalid(all);
   return data;
 }

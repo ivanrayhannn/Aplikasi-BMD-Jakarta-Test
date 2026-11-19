@@ -2,7 +2,7 @@
 // Disusun di sekitar satu keputusan: kendaraan mana yang perlu perhatian sekarang.
 import { ref, computed, onMounted } from '../../vendor/vue.js';
 import { api } from '../api.js';
-import { isAdmin } from '../store.js';
+import { isAdmin, isApprover } from '../store.js';
 import { label, tone, tanggal, waktu, angka, kendaraan, jatuhTempo, STATUS_JADWAL_LABEL } from '../format.js';
 import { Badge, EmptyState, PageHeader } from '../components/ui.js';
 
@@ -28,10 +28,12 @@ export const Dashboard = {
       { key: 'rusak_ringan', text: 'Perlu servis / rusak ringan', n: d.value.kondisi.rusak_ringan },
       { key: 'rusak_berat', text: 'Rusak berat', n: d.value.kondisi.rusak_berat },
     ] : []));
+    // Antrean siklus aset sesuai peran: Approver memutus, Pengelola Aset memproses.
+    const antrean = computed(() => (!d.value ? [] : isApprover.value ? d.value.pengajuan.menunggu_persetujuan : isAdmin.value ? d.value.pengajuan.siap_diproses : []));
     const perhatian = computed(() => (d.value
       ? d.value.pengingat.servis.length + d.value.pengingat.dokumen.length + d.value.pengingat.pembaruan_data.length
-      + d.value.pengingat.rusak_berat_dipegang.length : 0));
-    return { d, meta, error, kondisi, perhatian, isAdmin, ringkasRupiah, label, tone, tanggal, waktu, angka, kendaraan, jatuhTempo, STATUS_JADWAL_LABEL };
+      + d.value.pengingat.rusak_berat_dipegang.length + antrean.value.length : 0));
+    return { d, meta, error, kondisi, perhatian, antrean, isAdmin, isApprover, ringkasRupiah, label, tone, tanggal, waktu, angka, kendaraan, jatuhTempo, STATUS_JADWAL_LABEL };
   },
   template: `<div>
     <PageHeader title="Dashboard Kendaraan" subtitle="Kondisi dan pemakaian kendaraan dinas operasional" />
@@ -51,6 +53,9 @@ export const Dashboard = {
             <a v-for="k in kondisi" :key="k.key" :href="'#/kdo?kondisi=' + k.key" :class="'cond ' + tone('kondisi', k.key)">
               <b>{{ k.n }}</b><span>{{ k.text }}</span></a>
           </div>
+          <p class="holder-line">Status aset:
+            <template v-for="(s, i) in ['aktif', 'siaga', 'perawatan', 'rusak', 'dihapuskan']" :key="s"><template v-if="i">, </template>
+              <a :href="'#/kdo?is_aktif=&status_aset=' + s"><b>{{ d.status_aset[s] || 0 }}</b> {{ label('status_aset', s).toLowerCase() }}</a></template></p>
           <p class="holder-line">Status pemegang:
             <a href="#/pemakaian?status=aktif"><b>{{ d.pemegang.ada }}</b> ada pemegang</a>,
             <a href="#/kdo?tanpa_pemegang=1"><b>{{ d.pemegang.tanpa }}</b> tanpa pemegang</a></p>
@@ -61,12 +66,19 @@ export const Dashboard = {
         <section class="card attention" aria-labelledby="perhatian-judul">
           <div class="card-head"><h2 id="perhatian-judul">Perlu perhatian</h2><span class="sub">{{ perhatian }} butir</span></div>
           <EmptyState v-if="!perhatian" title="Tidak ada yang perlu ditindaklanjuti" hint="Servis, STNK, pajak, kondisi, dan pembaruan data kendaraan masih dalam batas." />
+          <template v-if="antrean.length">
+            <h3>{{ isApprover ? 'Menunggu persetujuan Anda' : 'Pengajuan siap diproses' }} <span class="sub-inline">{{ antrean.length }} pengajuan</span></h3>
+            <ul class="reminders"><li v-for="p in antrean" :key="'a' + p.id">
+              <span class="code">{{ p.nomor }}</span><span>{{ label('jenis_pengajuan', p.jenis) }}<template v-if="p.nomor_polisi">, {{ p.nomor_polisi }}</template></span>
+              <Badge :tone="tone('status_pengajuan', p.status)">{{ label('status_pengajuan', p.status) }}</Badge>
+              <a class="act" :href="'#/pengajuan/' + p.id">{{ isApprover ? 'Putuskan' : 'Proses' }}</a></li></ul>
+          </template>
           <template v-if="d.pengingat.rusak_berat_dipegang.length">
             <h3>Rusak berat, masih ada pemegang <span class="sub-inline">tarik ke pengurus barang</span></h3>
             <ul class="reminders"><li v-for="k in d.pengingat.rusak_berat_dipegang" :key="'r' + k.id">
               <a :href="'#/kdo/' + k.id"><Plate :nopol="k.nomor_polisi" /></a>
               <span>{{ k.pemegang_nama }}</span><Badge tone="bad">Rusak berat</Badge>
-              <a class="act" :href="'#/kdo/' + k.id + '?tab=pemegang'">{{ isAdmin ? 'Tutup penugasan' : 'Lihat' }}</a></li></ul>
+              <a class="act" :href="'#/kdo/' + k.id + '?tab=pemegang'">{{ isAdmin ? 'Pengembalian aset' : 'Lihat' }}</a></li></ul>
           </template>
           <template v-if="d.pengingat.servis.length">
             <h3>Jadwal servis <span class="sub-inline">terlewat atau dalam {{ meta.pengingat_servis_hari }} hari</span></h3>

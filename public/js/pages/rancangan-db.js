@@ -29,35 +29,62 @@ const EDGES = {
   'sessions.user_id': { d: 'M175 730 V680', label: [182, 710] },
 };
 
-function boxes() {
-  return TABLES.map((t) => {
+// Diagram kedua: modul siklus aset beserta tabel inti yang dirujuknya, agar diagram utama tetap terbaca.
+const POS_SIKLUS = {
+  users: [20, 20], pengajuan: [385, 20], perangkat_daerah: [750, 20], pns: [750, 180], kdo: [750, 340],
+  kdo_pengembalian: [20, 300], berita_acara: [385, 300], kdo_pemakaian: [20, 520],
+};
+const EDGES_SIKLUS = {
+  'pengajuan.perangkat_daerah_id': { d: 'M615 60 H750', label: [640, 54] },
+  'pengajuan.pns_id': { d: 'M615 150 H690 V240 H750', label: [640, 144] },
+  'pengajuan.kdo_id': { d: 'M615 210 H710 V400 H750', label: [640, 204] },
+  'pengajuan.diajukan_oleh': { d: 'M385 60 H250', label: [290, 54] },
+  'pengajuan.diputus_oleh': { d: 'M385 90 H250', label: [290, 84] },
+  'pengajuan.diselesaikan_oleh': { d: 'M385 120 H250', label: [290, 114] },
+  'berita_acara.pengajuan_id': { d: 'M500 300 V240', label: [507, 275] },
+  'berita_acara.kdo_id': { d: 'M615 430 H750', label: [640, 424] },
+  'berita_acara.dibuat_oleh': { d: 'M385 350 H350 V135 H250', label: [292, 160] },
+  'kdo_pengembalian.berita_acara_id': { d: 'M250 400 H385', label: [270, 394] },
+  'kdo_pengembalian.pengajuan_id': { d: 'M200 300 V230 H385', label: [207, 270] },
+  'kdo_pengembalian.kdo_id': { d: 'M160 460 V490 H730 V490 H750', label: [470, 484] },
+  'kdo_pengembalian.pemakaian_id': { d: 'M80 460 V520', label: [87, 495] },
+};
+const DIAGRAMS = {
+  inti: { pos: POS, edges: EDGES, viewBox: '0 0 1000 850', judul: 'Diagram relasi entitas: data inti' },
+  siklus: { pos: POS_SIKLUS, edges: EDGES_SIKLUS, viewBox: '0 0 1000 660', judul: 'Diagram relasi entitas: modul siklus aset' },
+};
+
+function boxes(pos) {
+  return TABLES.filter((t) => pos[t.name]).map((t) => {
     const keys = t.columns.filter((c) => c.key);
     const others = t.columns.length - keys.length;
-    const [x, y] = POS[t.name];
+    const [x, y] = pos[t.name];
     const h = HEAD + keys.length * ROW + (others ? MORE : 0) + PAD;
     return { ...t, x, y, h, keys, others, fill: KIND[t.kind].fill };
   });
 }
 
 const ErdDiagram = {
-  setup() {
-    const edges = RELATIONS.map((r) => {
+  props: { jenis: { type: String, default: 'inti' } },
+  setup(props) {
+    const g = DIAGRAMS[props.jenis];
+    const edges = RELATIONS.filter((r) => g.edges[`${r.from}.${r.column}`]).map((r) => {
       const nullable = TABLES.find((t) => t.name === r.from).columns.find((c) => c.name === r.column).nullable;
-      return { ...r, ...EDGES[`${r.from}.${r.column}`], optional: nullable };
+      return { ...r, ...g.edges[`${r.from}.${r.column}`], optional: nullable };
     });
     const summary = RELATIONS.map((r) => `${r.from} ke ${r.to} (${r.onDelete})`).join('; ');
-    return { boxes: boxes(), edges, summary, BOX_W, HEAD, ROW };
+    return { boxes: boxes(g.pos), edges, summary, BOX_W, HEAD, ROW, g, m: props.jenis };
   },
   template: `<div class="erd-wrap">
-    <svg class="erd" viewBox="0 0 1000 850" role="img" :aria-label="'Diagram relasi entitas: ' + summary">
+    <svg class="erd" :viewBox="g.viewBox" role="img" :aria-label="g.judul + '. Relasi: ' + summary">
       <defs>
-        <marker id="many" viewBox="0 0 12 12" refX="1" refY="6" markerWidth="12" markerHeight="12" orient="auto">
+        <marker :id="m + '-many'" viewBox="0 0 12 12" refX="1" refY="6" markerWidth="12" markerHeight="12" orient="auto">
           <path d="M12 6 L1 1 M12 6 L1 11 M12 6 L1 6" fill="none" stroke="#1c2430" stroke-width="1.4" /></marker>
-        <marker id="one" viewBox="0 0 12 12" refX="11" refY="6" markerWidth="12" markerHeight="12" orient="auto">
+        <marker :id="m + '-one'" viewBox="0 0 12 12" refX="11" refY="6" markerWidth="12" markerHeight="12" orient="auto">
           <path d="M8 1 V11 M5 1 V11" fill="none" stroke="#1c2430" stroke-width="1.4" /></marker>
       </defs>
       <g v-for="e in edges" :key="e.from + e.column">
-        <path :d="e.d" fill="none" stroke="#1c2430" stroke-width="1.4" :stroke-dasharray="e.optional ? '5 4' : null" marker-start="url(#many)" marker-end="url(#one)" />
+        <path :d="e.d" fill="none" stroke="#1c2430" stroke-width="1.4" :stroke-dasharray="e.optional ? '5 4' : null" :marker-start="'url(#' + m + '-many)'" :marker-end="'url(#' + m + '-one)'" />
         <text :x="e.label[0]" :y="e.label[1]" class="erd-label">{{ e.onDelete }}</text>
       </g>
       <g v-for="b in boxes" :key="b.name" :transform="'translate(' + b.x + ' ' + b.y + ')'">
@@ -111,6 +138,9 @@ export const RancanganDbPage = {
         <span>Ujung bercabang: sisi "banyak"; dua garis: sisi "satu"</span>
       </div>
       <ErdDiagram />
+      <h3>Modul siklus aset</h3>
+      <p class="hint">Pengajuan dengan approval, berita acara, dan pengembalian aset beserta tabel inti yang dirujuknya.</p>
+      <ErdDiagram jenis="siklus" />
       <p class="hint">Diagram hanya memuat kolom kunci (PK, FK, UK). Kolom lengkap ada di kamus data di bawah.</p>
     </div>
 

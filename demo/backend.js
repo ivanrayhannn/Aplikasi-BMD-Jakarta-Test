@@ -4,7 +4,7 @@
 import { registerApi } from './lib/api/index.js';
 import { initDatabase } from './lib/api/schema.js';
 
-const STORAGE_KEY = 'si-kdo-demo-db-v2';
+const STORAGE_KEY = 'si-kdo-demo-db-v3';
 try { localStorage.removeItem('si-kdo-demo-db-v1'); } catch { /* data demo skema lama */ }
 
 // Autentikasi demo

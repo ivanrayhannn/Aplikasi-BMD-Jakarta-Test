@@ -55,12 +55,14 @@ const toast = (page, text) => page.waitForSelector(`.toast:has-text("${text}")`,
   ok('Kartu Total Kendaraan -> daftar kendaraan');
   await page.goto(BASE + '#/dashboard');
   const nav = await page.$$eval('nav#menu-utama .nav-group', (els) => els.map((e) => e.textContent.trim()));
-  if (nav.join('|') !== 'Pendataan|Kegiatan|Pelaporan|Administrasi|System Documentation') throw new Error('urutan grup menu: ' + nav);
-  ok('Menu urut siklus kerja: Pendataan, Kegiatan, Pelaporan, Administrasi, System Documentation');
-  await page.click('.reminders a.act:has-text("Tutup penugasan")');
+  if (nav.join('|') !== 'Pendataan|Siklus Aset|Persetujuan|Pelaporan|Administrasi|System Documentation') throw new Error('urutan grup menu: ' + nav);
+  ok('Menu urut siklus kerja: Pendataan, Siklus Aset, Persetujuan, Pelaporan, Administrasi, System Documentation');
+  await page.waitForSelector('.reminders:has-text("DSP/KDO") a.act:has-text("Proses")');
+  ok('Dashboard admin -> antrean "Pengajuan siap diproses" (disposal, PR/PO)');
+  await page.click('.reminders a.act:has-text("Pengembalian aset")');
   await page.waitForSelector('[role=tab][aria-selected=true]:has-text("Penugasan")');
-  await page.waitForSelector('button:has-text("Tutup Penugasan")');
-  ok('Dashboard "Rusak berat, masih ada pemegang" -> tab Penugasan kendaraan dengan tombol Tutup Penugasan');
+  await page.waitForSelector('button:has-text("Pengembalian Aset")');
+  ok('Dashboard "Rusak berat, masih ada pemegang" -> tab Penugasan kendaraan dengan tombol Pengembalian Aset');
   await page.goto(BASE + '#/dashboard');
   await page.click('a.cond.bad');
   await page.waitForFunction(() => document.querySelectorAll('tbody tr').length === 2 && document.querySelector('tbody').textContent.includes('B 3920 PQJ'));
@@ -78,8 +80,8 @@ const toast = (page, text) => page.waitForSelector(`.toast:has-text("${text}")`,
   await page.waitForFunction(() => document.querySelectorAll('tbody tr').length === 20);
   ok('Hapus filter -> 20 kendaraan kembali');
   await page.check('label.check:has-text("Belum ada pemegang") input');
-  await page.waitForSelector('.empty:has-text("Tidak ada kendaraan yang cocok")');
-  ok('Filter "Belum ada pemegang" -> semua kendaraan punya pemegang, state kosong tampil');
+  await page.waitForFunction(() => document.querySelectorAll('tbody tr').length === 2);
+  ok('Filter "Belum ada pemegang" -> 2 kendaraan yang sudah dikembalikan');
 
   // Tambah kendaraan: validasi klien, duplikat dari server, sukses
   await page.goto(BASE + '#/kdo/baru');
@@ -112,25 +114,6 @@ const toast = (page, text) => page.waitForSelector(`.toast:has-text("${text}")`,
   await page.waitForSelector('dd:has-text("Abu-abu")');
   ok('Ubah kendaraan -> warna tersimpan; dropdown pemegang terkunci selama dipakai');
 
-  // Penugasan: tutup & tautkan dari tab Penugasan di detail
-  await page.click('[role=tab]:has-text("Penugasan")');
-  await page.click('button:has-text("Tutup Penugasan")');
-  await page.keyboard.press('Escape');
-  await page.waitForSelector('.modal', { state: 'detached' });
-  ok('Tab Penugasan, dialog Tutup Penugasan -> tertutup dengan Escape');
-  await page.click('button:has-text("Tutup Penugasan")');
-  await page.click('.modal button.primary');
-  await toast(page, 'Penugasan ditutup');
-  await page.waitForSelector('.badge:has-text("Belum ada pemegang")');
-  ok('Tutup penugasan -> pemegang kosong, riwayat berstatus Selesai');
-  await page.click('button:has-text("Tautkan Pemegang")');
-  await pick(page, '.modal #pns_id', 'Ratna Juwita');
-  await page.fill('.modal #keterangan', 'Uji tautkan');
-  await page.click('.modal button.primary');
-  await toast(page, 'Pemegang ditautkan');
-  await page.waitForSelector('dd a:has-text("Ratna Juwita")');
-  ok('Tautkan pemegang -> Ratna Juwita Lestari menjadi pemegang');
-
   // Perawatan dari tab Perawatan di detail
   await page.click('[role=tab]:has-text("Perawatan")');
   await page.click('button:has-text("Catat Perawatan")');
@@ -161,9 +144,28 @@ const toast = (page, text) => page.waitForSelector(`.toast:has-text("${text}")`,
   await page.fill('.modal #biaya', '0');
   await page.selectOption('.modal #kondisi_setelah', 'rusak_berat');
   await page.click('.modal button.primary');
-  await page.waitForSelector('.next-step:has-text("Rusak berat") button:has-text("Tutup Penugasan")');
+  await page.waitForSelector('.next-step:has-text("Rusak berat") button:has-text("Pengembalian Aset")');
   await page.waitForSelector('[role=tab][aria-selected=true]:has-text("Penugasan")');
-  ok('Servis hasil rusak berat -> saran Tutup Penugasan, tab Penugasan terbuka');
+  ok('Servis hasil rusak berat -> saran Pengembalian Aset, tab Penugasan terbuka');
+  await page.click('.next-step button:has-text("Pengembalian Aset")');
+  await page.keyboard.press('Escape');
+  await page.waitForSelector('.modal', { state: 'detached' });
+  await page.click('.next-step button:has-text("Pengembalian Aset")');
+  await page.fill('.modal #alasan', '');
+  await page.click('.modal button.primary');
+  await page.waitForSelector('.modal .field-error:has-text("Alasan pengembalian wajib diisi")');
+  ok('Form Pengembalian Aset: tutup dengan Escape, alasan wajib');
+  await page.fill('.modal #alasan', 'Rusak berat setelah servis');
+  await page.fill('.modal #kilometer', '15200');
+  await page.check('.modal label.check:has-text("Ban serep") input');
+  await page.click('.modal button.primary');
+  await toast(page, 'Pengembalian tercatat, BAPK/KDO/');
+  await page.waitForSelector('.page-head .badge:has-text("Rusak")');
+  await page.waitForSelector('.badge:has-text("Belum ada pemegang")');
+  ok('Pengembalian (data, pengecekan unit, serah terima) -> pemegang kosong, status aset Rusak, BA pengembalian terbit');
+  await page.click('[role=tab]:has-text("Riwayat Aset")');
+  await page.waitForSelector('td a:has-text("BAPK/KDO/")');
+  ok('Tab Riwayat Aset -> berita acara pengembalian tercantum');
 
   // Hapus kendaraan
   await page.click('.page-head button.danger');
@@ -225,25 +227,103 @@ const toast = (page, text) => page.waitForSelector(`.toast:has-text("${text}")`,
   await page.fill('#nomor_rangka', 'UJI-RANGKA-77');
   await pick(page, '#perangkat_daerah_id', 'Dinas Kesehatan');
   await page.click('form button.primary');
-  await page.waitForSelector('.next-step:has-text("Langkah berikutnya") button:has-text("Tautkan Pemegang")');
-  await page.click('.next-step button:has-text("Tautkan Pemegang")');
+  await page.waitForSelector('.next-step:has-text("Langkah berikutnya") button:has-text("Ajukan Penugasan")');
+  await page.click('.next-step button:has-text("Ajukan Penugasan")');
   await pick(page, '.modal #pns_id', 'Ratna Juwita');
+  await page.fill('.modal #alasan', 'Kendaraan operasional bidang aset');
   await page.click('.modal button.primary');
-  await toast(page, 'Pemegang ditautkan');
-  await page.waitForSelector('.next-step', { state: 'detached' });
-  ok('Kendaraan baru tanpa pemegang -> tab Penugasan + saran Tautkan Pemegang, selesai dalam satu alur');
+  await toast(page, 'terkirim');
+  await page.waitForSelector('.page-head .badge:has-text("Menunggu Persetujuan")');
+  ok('Kendaraan baru tanpa pemegang -> saran Ajukan Penugasan -> pengajuan PNG menunggu persetujuan');
 
   // Menu Penugasan Pemegang
   await page.goto(BASE + '#/pemakaian');
-  await page.click('tr:has-text("B 3871 PQD") button:has-text("Tutup")');
+  await page.click('tr:has-text("B 1938 PQB") button:has-text("Pengembalian")');
+  await page.fill('.modal #alasan', 'Pegawai mutasi ke wilayah');
   await page.click('.modal button.primary');
-  await toast(page, 'Penugasan ditutup');
+  await toast(page, 'Pengembalian tercatat');
+  ok('Menu Penugasan & Pengembalian: pengembalian B 1938 PQB dari daftar');
+
+  // Approver: memutus pengajuan
+  await page.click('button:has-text("Keluar")');
+  await login(page, 'approver@kdo.test', 'approver12345');
+  await page.waitForSelector('.attention h3:has-text("Menunggu persetujuan Anda")');
+  ok('Approver -> dashboard menampilkan antrean "Menunggu persetujuan Anda"');
+  await page.goto(BASE + '#/pengajuan');
+  await page.click('tbody tr:has-text("Ratna Juwita") a.code');
+  await page.click('.action-card button:has-text("Tolak")');
+  await toast(page, 'Alasan penolakan wajib diisi');
+  await page.click('.action-card button:has-text("Setujui")');
+  await page.waitForSelector('.page-head .badge:has-text("Disetujui")');
+  ok('Approver: tolak tanpa alasan ditolak, setujui penugasan -> Disetujui');
+  await page.goto(BASE + '#/pengajuan');
+  await page.click('tbody tr:has-text("Rahmawati") a.code');
+  await page.fill('#catatan', 'Gunakan untuk monitoring UMKM');
+  await page.click('.action-card button:has-text("Setujui")');
+  await page.waitForSelector('.timeline:has-text("Gunakan untuk monitoring UMKM")');
+  ok('Approver setujui penugasan Rahmawati, catatan tampil di alur');
+  if (await page.locator('.action-card:has-text("Proses")').count()) throw new Error('approver tidak boleh memproses');
+
+  // Admin: memproses pengajuan yang disetujui
+  await page.click('button:has-text("Keluar")');
+  await login(page, 'admin@kdo.test', 'admin12345');
+  await page.waitForSelector('h1:has-text("Dashboard Kendaraan")');
+  await page.goto(BASE + '#/pengajuan?jenis=penugasan');
+  await page.click('tbody tr:has-text("Rahmawati") a.code');
+  await page.click('.action-card button:has-text("Serahkan")');
+  await page.waitForSelector('.page-head .badge:has-text("Selesai")');
+  await page.click('a.code:has-text("BAST/KDO/")');
+  await page.waitForSelector('.ba-title:has-text("BERITA ACARA SERAH TERIMA")');
+  await page.waitForSelector('.ba-sheet:has-text("Rahmawati Hasibuan")');
+  ok('Admin proses penugasan -> Selesai, BAST serah terima siap cetak');
+  await page.goto(BASE + '#/disposal');
+  await page.click('tbody tr a.code:has-text("DSP/")');
+  await page.click('.action-card button.primary');
+  await page.waitForSelector('.field-error:has-text("Nilai jual wajib diisi")');
+  await page.fill('#nilai_jual', '9250000');
+  await page.fill('#nomor_dokumen', 'RL-123/KPKNL/2026');
+  await page.fill('#pembeli', 'CV Maju Jaya');
+  await page.click('.action-card button.primary');
+  await page.waitForSelector('.page-head .badge:has-text("Selesai")');
+  await page.waitForSelector('dd:has-text("Rp9.250.000")');
+  ok('Disposal lelang: validasi nilai jual, aset dihapuskan, nilai jual tercatat');
+  await page.goto(BASE + '#/pengadaan');
+  await page.click('tbody tr:has-text("PR/PO Terbit") a.code');
+  await page.click('.action-card button:has-text("Terima unit")');
+  await page.waitForSelector('.page-head .badge:has-text("Unit Diterima")');
+  await page.click('a:has-text("Registrasi aset")');
+  await page.waitForSelector('.alert.info:has-text("Registrasi aset dari pengajuan pengadaan")');
+  await page.fill('#nomor_polisi', 'B 1999 PQZ');
+  await page.fill('#merek', 'Isuzu');
+  await page.fill('#nomor_rangka', 'MHCNLR85UJI0001');
+  await page.click('form button.primary');
+  await page.waitForSelector('h1:has-text("B 1999 PQZ")');
+  await page.waitForSelector('.page-head .badge:has-text("Siaga")');
+  ok('Pengadaan: penerimaan unit (BA) -> registrasi aset dari PO -> kendaraan baru berstatus Siaga');
+  await page.goto(BASE + '#/pengadaan');
   await page.click('.page-head button.primary');
-  await pick(page, '.modal #kdo_id', 'B 3871 PQD');
-  await pick(page, '.modal #pns_id', 'Putri Ayu Anggraini');
   await page.click('.modal button.primary');
-  await toast(page, 'Pemegang ditautkan');
-  ok('Menu Penugasan Pemegang: tutup penugasan B 3871 PQD, lalu tautkan ke Putri');
+  await page.waitForSelector('.modal .field-error:has-text("Alasan / kebutuhan wajib diisi")');
+  await page.keyboard.press('Escape');
+  ok('Ajukan pengadaan baru -> validasi alasan wajib');
+
+  // Pegawai: swalayan
+  await page.click('button:has-text("Keluar")');
+  await login(page, 'pegawai@kdo.test', 'pegawai12345');
+  await page.waitForSelector('h1:has-text("Halo, Bambang Hermawan")');
+  await page.waitForSelector('.vehicle-list:has-text("B 1426 PQA")');
+  ok('Pegawai -> beranda "Kendaraan Saya" hanya berisi kendaraan yang dipegangnya');
+  await page.click('button:has-text("Ajukan Pengembalian")');
+  await page.fill('.modal #alasan', 'Pindah tugas ke kantor wilayah');
+  await page.click('.modal button.primary');
+  await page.waitForSelector('.page-head .badge:has-text("Disetujui")');
+  ok('Pegawai ajukan pengembalian -> langsung siap diproses Pengelola Aset');
+  await page.goto(BASE + '#/pns');
+  await page.waitForSelector('h1:has-text("Akses ditolak")');
+  ok('Pegawai buka data PNS -> "Akses ditolak"');
+  await page.click('button:has-text("Keluar")');
+  await login(page, 'admin@kdo.test', 'admin12345');
+  await page.waitForSelector('h1:has-text("Dashboard Kendaraan")');
 
   // Perawatan (tab)
   await page.goto(BASE + '#/perawatan');
@@ -259,7 +339,7 @@ const toast = (page, text) => page.waitForSelector(`.toast:has-text("${text}")`,
   await page.goto(BASE + '#/laporan');
   await page.waitForSelector('.report-summary:has-text("Total kendaraan")');
   await page.selectOption('label.filter:has-text("Kondisi") select', 'rusak_berat');
-  await page.waitForSelector('.report-summary:has-text("2 unit")');
+  await page.waitForSelector('.report-summary:has-text("1 unit")'); // B 3920 PQJ sudah dihapuskan lewat disposal
   const [pdf] = await Promise.all([page.waitForEvent('download'), page.click('button:has-text("Unduh PDF")')]);
   const [xlsx] = await Promise.all([page.waitForEvent('download'), page.click('button:has-text("Unduh Excel")')]);
   if (!/^laporan-kendaraan-.*\.pdf$/.test(pdf.suggestedFilename()) || !/\.xlsx$/.test(xlsx.suggestedFilename())) throw new Error('nama berkas');
@@ -310,12 +390,13 @@ const toast = (page, text) => page.waitForSelector(`.toast:has-text("${text}")`,
 
   await page.click('nav a:has-text("Rancangan Database")');
   await page.waitForSelector('.alert.info:has-text("rancangan database untuk sistem SI-KDO")');
-  if ((await page.locator('svg.erd g[transform]').count()) !== 9) throw new Error('ERD harus memuat 9 tabel');
+  if ((await page.locator('svg.erd').first().locator('g[transform]').count()) !== 9) throw new Error('ERD inti harus memuat 9 tabel');
+  if ((await page.locator('svg.erd').nth(1).locator('g[transform]').count()) !== 8) throw new Error('ERD siklus harus memuat 8 tabel');
   const [ddl] = await Promise.all([page.waitForEvent('download'), page.click('a:has-text("Unduh DDL MySQL")')]);
   if (!fs.readFileSync(await ddl.path(), 'utf8').includes('CREATE TABLE kdo (')) throw new Error('DDL');
   await page.click('details.dict summary:has-text("kdo_perawatan")');
   await page.waitForSelector('details.dict[open] td:has-text("jadwal_berikutnya")');
-  ok('Rancangan Database: catatan rancangan, ERD 9 tabel, unduh DDL MySQL, buka kamus data kdo_perawatan');
+  ok('Rancangan Database: catatan rancangan, ERD inti 9 tabel + ERD siklus aset, unduh DDL MySQL, buka kamus data kdo_perawatan');
 
   await page.goto(BASE + '#/log');
   await page.waitForSelector('td:has-text("TAMBAH")');

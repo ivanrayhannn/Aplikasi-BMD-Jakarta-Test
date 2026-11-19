@@ -116,7 +116,7 @@ test('hapus PNS yang memegang kendaraan: pemegang menjadi NULL, pemakaian ditutu
   const bambang = await pns('Bambang');
   const del = await api('DELETE', `/pns/${bambang.id}`, { token });
   assert.equal(del.status, 200);
-  assert.equal(del.body.data.kdo_dilepas, 2);
+  assert.equal(del.body.data.kdo_dilepas, 1); // B 3871 PQD sudah dikembalikan di data uji
   const after = (await api('GET', `/kdo/${(await kdo('B 1426 PQA')).id}`, { token })).body.data;
   assert.equal(after.pemegang_pns_id, null);
   assert.equal(after.pemakaian_aktif, null);

@@ -1,4 +1,5 @@
-// Fitur 03 (Pemakai Kendaraan): tautkan pemakai, tutup pemakaian, riwayat pemakaian.
+// Fitur 03 (Penugasan Pemegang): riwayat penugasan. POST /pemakaian dan /selesai adalah pencatatan langsung
+// untuk pendataan awal; alur normal lewat pengajuan penugasan dan pengembalian aset (siklus.js).
 // Sumber kebenaran pemegang kendaraan adalah pemakaian berstatus "aktif";
 // kolom kdo.pemegang_pns_id selalu disinkronkan oleh fungsi di modul ini (tidak ada input ganda).
 import { send, invalid, conflict, notFound, paginate, Where } from '../http.js';
@@ -43,7 +44,7 @@ export function openPemakaian(db, kdo, pns, { tanggal_mulai, keterangan = null }
     kdo_id: kdo.id, pns_id: pns.id, pns_nama: pns.nama_pegawai, pns_nip: pns.nip,
     tanggal_mulai, keterangan, status: 'aktif',
   });
-  db.prepare("UPDATE kdo SET pemegang_pns_id = ?, updated_at = datetime('now') WHERE id = ?").run(pns.id, kdo.id);
+  db.prepare("UPDATE kdo SET pemegang_pns_id = ?, status_aset = 'aktif', updated_at = datetime('now') WHERE id = ?").run(pns.id, kdo.id);
   return id;
 }
 
@@ -93,7 +94,7 @@ export function register(app, { db, log }) {
     transaction(db, () => {
       db.prepare(`UPDATE kdo_pemakaian SET status = 'selesai', tanggal_selesai = ?, keterangan = COALESCE(?, keterangan) WHERE id = ?`)
         .run(data.tanggal_selesai, data.keterangan, current.id);
-      db.prepare("UPDATE kdo SET pemegang_pns_id = NULL, updated_at = datetime('now') WHERE id = ?").run(current.kdo_id);
+      db.prepare("UPDATE kdo SET pemegang_pns_id = NULL, status_aset = CASE WHEN status_aset = 'aktif' THEN 'siaga' ELSE status_aset END, updated_at = datetime('now') WHERE id = ?").run(current.kdo_id);
     });
     log(req, 'TUTUP_PEMAKAIAN', 'kdo', current.kdo_id, { pemakaian_id: current.id, tanggal_selesai: data.tanggal_selesai });
     send(res, db.prepare(`SELECT ${SELECT} FROM ${FROM} WHERE pk.id = ?`).get(current.id));

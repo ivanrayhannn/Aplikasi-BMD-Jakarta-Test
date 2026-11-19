@@ -7,14 +7,16 @@ import { label, tone, tanggal, rupiah, angka, jatuhTempo, kendaraan, today, STAT
 import { schemas } from '../../lib/shared/validation.js';
 import { useList, fetchOptions } from '../components/list.js';
 import { Badge, EmptyState, PageHeader, Pager, Field, EnumSelect, ConfirmDialog, useForm } from '../components/ui.js';
-import { TautkanDialog, TutupPemakaianDialog, PerawatanDialog } from '../components/dialogs.js';
+import { PerawatanDialog } from '../components/dialogs.js';
+import { AjukanDialog, PengembalianDialog } from '../components/siklus-dialogs.js';
+import { notify } from '../store.js';
 
 export const KdoList = {
   components: { Badge, EmptyState, PageHeader, Pager, EnumSelect },
   setup() {
     const units = ref([]);
     onMounted(async () => (units.value = await fetchOptions('/perangkat-daerah')));
-    const list = useList('/kdo', { q: '', kondisi: '', jenis_kendaraan: '', peruntukan: '', perangkat_daerah_id: '', is_aktif: '1', tanpa_pemegang: '' });
+    const list = useList('/kdo', { q: '', kondisi: '', status_aset: '', jenis_kendaraan: '', peruntukan: '', perangkat_daerah_id: '', is_aktif: '1', tanpa_pemegang: '' });
     return { ...list, units, isAdmin, label, tone, kendaraan };
   },
   template: `<div>
@@ -28,6 +30,7 @@ export const KdoList = {
         <label class="filter"><span>Jenis kendaraan</span><EnumSelect v-model="filters.jenis_kendaraan" group="jenis_kendaraan" placeholder="Semua jenis" /></label>
         <label class="filter"><span>Peruntukan</span><EnumSelect v-model="filters.peruntukan" group="peruntukan" placeholder="Semua peruntukan" /></label>
         <label class="filter"><span>Kondisi</span><EnumSelect v-model="filters.kondisi" group="kondisi" placeholder="Semua kondisi" /></label>
+        <label class="filter"><span>Status aset</span><EnumSelect v-model="filters.status_aset" group="status_aset" placeholder="Semua status" /></label>
         <label class="filter"><span>Perangkat daerah</span><select v-model="filters.perangkat_daerah_id"><option value="">Semua unit</option>
           <option v-for="u in units" :key="u.id" :value="String(u.id)">{{ u.singkatan || u.nama_dinas }}</option></select></label>
         <label class="filter"><span>Status data</span><select v-model="filters.is_aktif"><option value="">Aktif & nonaktif</option><option value="1">Aktif</option><option value="0">Nonaktif</option></select></label>
@@ -35,14 +38,15 @@ export const KdoList = {
         <button v-if="hasFilter()" class="link" @click="reset">Hapus filter</button>
       </div>
       <div class="table-wrap"><table class="stack">
-        <thead><tr><th>No. Polisi</th><th>Merek / Tipe</th><th>Jenis</th><th>Unit</th><th>Kondisi</th><th>Pemegang</th></tr></thead>
+        <thead><tr><th>No. Polisi</th><th>Merek / Tipe</th><th>Jenis</th><th>Unit</th><th>Kondisi / Status</th><th>Pemegang</th></tr></thead>
         <tbody>
           <tr v-for="k in rows" :key="k.id" :class="{ inactive: !k.is_aktif }">
             <td data-label="No. Polisi"><a :href="'#/kdo/' + k.id"><Plate :nopol="k.nomor_polisi" /></a><span class="sub">{{ k.tahun_produksi }}<template v-if="!k.is_aktif">, nonaktif</template></span></td>
             <td data-label="Merek / Tipe">{{ kendaraan(k) }}<span class="sub">{{ k.warna }}</span></td>
             <td data-label="Jenis">{{ label('jenis_kendaraan', k.jenis_kendaraan) }}<span v-if="k.peruntukan" class="sub">{{ label('peruntukan', k.peruntukan) }}</span></td>
             <td data-label="Unit">{{ k.perangkat_daerah_singkatan || k.perangkat_daerah }}</td>
-            <td data-label="Kondisi"><Badge :tone="tone('kondisi', k.kondisi)">{{ label('kondisi', k.kondisi) }}</Badge></td>
+            <td data-label="Kondisi"><Badge :tone="tone('kondisi', k.kondisi)">{{ label('kondisi', k.kondisi) }}</Badge>
+              <span class="sub"><Badge :tone="tone('status_aset', k.status_aset)">{{ label('status_aset', k.status_aset) }}</Badge></span></td>
             <td data-label="Pemegang"><template v-if="k.pemegang_nama">{{ k.pemegang_nama }}<span class="sub">{{ k.pemegang_jabatan }}</span></template>
               <Badge v-else tone="warn">Belum ada pemegang</Badge></td>
           </tr>
@@ -59,19 +63,22 @@ export const KdoList = {
 };
 
 export const KdoDetail = {
-  components: { Badge, PageHeader, ConfirmDialog, EmptyState, TautkanDialog, TutupPemakaianDialog, PerawatanDialog },
+  components: { Badge, PageHeader, ConfirmDialog, EmptyState, PerawatanDialog, AjukanDialog, PengembalianDialog },
   setup() {
     const k = ref(null);
     const perawatan = ref({ rows: [], ringkasan: null });
+    const siklus = ref({ pengajuan: [], beritaAcara: [] });
     const error = ref('');
     const dialog = ref(null); // 'hapus' | 'tautkan' | 'tutup' | { perawatan } | { hapusPerawatan }
 
     async function load() {
       try {
         const id = route.params.id;
-        const [detail, rawat] = await Promise.all([api.get(`/kdo/${id}`), api.get('/perawatan', { kdo_id: id, per_page: 1000 })]);
+        const [detail, rawat, pg, ba] = await Promise.all([api.get(`/kdo/${id}`), api.get('/perawatan', { kdo_id: id, per_page: 1000 }),
+          api.get('/pengajuan', { kdo_id: id, per_page: 100 }), api.get('/berita-acara', { kdo_id: id, per_page: 100 })]);
         k.value = detail.data;
         perawatan.value = { rows: rawat.data, ringkasan: rawat.meta.ringkasan };
+        siklus.value = { pengajuan: pg.data, beritaAcara: ba.data };
       } catch (e) { error.value = e.message; }
     }
     onMounted(load);
@@ -79,13 +86,15 @@ export const KdoDetail = {
 
     // Detail kendaraan adalah pusat kerja: identitas, penugasan, dan perawatan satu kendaraan ada di sini.
     // Tab dibaca dari ?tab= agar dashboard dan daftar lain bisa langsung membuka bagian yang perlu ditindaklanjuti.
-    const TABS = [['ringkasan', 'Ringkasan'], ['pemegang', 'Penugasan'], ['perawatan', 'Perawatan']];
+    const TABS = [['ringkasan', 'Ringkasan'], ['pemegang', 'Penugasan'], ['perawatan', 'Perawatan'], ['siklus', 'Riwayat Aset']];
     const tab = ref(TABS.some(([key]) => key === route.query.tab) ? route.query.tab : 'ringkasan');
     const select = (key) => { tab.value = key; history.replaceState(null, '', `#/kdo/${route.params.id}?tab=${key}`); };
 
     // Saran langkah berikutnya agar pengguna tidak perlu mengingat urutan kerja sendiri.
     const next = ref(route.query.baru === '1' ? 'baru' : null);
     const afterPemegang = () => { next.value = null; done(); };
+    function afterAjukan(pg) { dialog.value = null; next.value = null; notify(`Pengajuan ${pg.nomor} terkirim, menunggu persetujuan`); navigate(`/pengajuan/${pg.id}`); }
+    function afterKembali(r) { dialog.value = null; next.value = null; notify(`Pengembalian tercatat, ${r.berita_acara_nomor}`); load(); }
     function afterPerawatan(rec) {
       if (rec?.kondisi_setelah === 'rusak_berat' && k.value.pemakaian_aktif) { next.value = 'rusak_berat'; select('pemegang'); }
       done();
@@ -102,7 +111,7 @@ export const KdoDetail = {
 
     const removeKdo = () => api.del(`/kdo/${k.value.id}`);
     const removePerawatan = () => api.del(`/perawatan/${dialog.value.hapusPerawatan.id}`);
-    return { k, perawatan, error, dialog, done, jadwal, TABS, tab, select, next, afterPemegang, afterPerawatan, removeKdo, removePerawatan, navigate, isAdmin,
+    return { k, perawatan, siklus, error, dialog, done, jadwal, TABS, tab, select, next, afterPemegang, afterPerawatan, afterAjukan, afterKembali, removeKdo, removePerawatan, navigate, isAdmin,
       label, tone, tanggal, rupiah, angka, jatuhTempo, kendaraan, STATUS_JADWAL_LABEL };
   },
   template: `<div>
@@ -112,27 +121,30 @@ export const KdoDetail = {
       <PageHeader :title="k.nomor_polisi" :subtitle="kendaraan(k) + ', ' + k.perangkat_daerah" back="#/kdo" back-label="Kendaraan Dinas">
         <template #title><Plate large :nopol="k.nomor_polisi" /></template>
         <template #badges> <Badge :tone="tone('kondisi', k.kondisi)">{{ label('kondisi', k.kondisi) }}</Badge>
-          <Badge v-if="!k.is_aktif" tone="muted">Nonaktif</Badge></template>
-        <template v-if="isAdmin">
+          <Badge :tone="tone('status_aset', k.status_aset)">{{ label('status_aset', k.status_aset) }}</Badge>
+          <Badge v-if="!k.is_aktif && k.status_aset !== 'dihapuskan'" tone="muted">Nonaktif</Badge></template>
+        <template v-if="isAdmin && k.status_aset !== 'dihapuskan'">
+          <button @click="dialog = { ajukan: 'mutasi' }">Ajukan Mutasi</button>
+          <button v-if="!k.pemegang_pns_id" @click="dialog = { ajukan: 'disposal' }">Ajukan Disposal</button>
           <button class="danger" @click="dialog = 'hapus'">Hapus</button>
           <a class="btn primary" :href="'#/kdo/' + k.id + '/ubah'">Ubah Data</a>
         </template>
       </PageHeader>
 
       <div v-if="next === 'baru'" class="alert info next-step" role="status">
-        <span><b>Kendaraan tersimpan.</b> Langkah berikutnya: tetapkan pegawai penanggung jawabnya.</span>
-        <span class="actions"><button class="small primary" @click="dialog = 'tautkan'">Tautkan Pemegang</button>
+        <span><b>Kendaraan tersimpan dengan status Siaga.</b> Langkah berikutnya: ajukan penugasan pegawai penanggung jawabnya (perlu persetujuan Approver).</span>
+        <span class="actions"><button class="small primary" @click="dialog = { ajukan: 'penugasan' }">Ajukan Penugasan</button>
           <button class="small" @click="next = null">Nanti saja</button></span>
       </div>
       <div v-if="next === 'rusak_berat'" class="alert warn next-step" role="status">
-        <span><b>Kondisi menjadi Rusak berat</b> dan kendaraan masih dipegang {{ k.pemegang_nama }}. Tarik ke pengurus barang dengan menutup penugasannya.</span>
-        <span class="actions"><button class="small primary" @click="dialog = 'tutup'">Tutup Penugasan</button>
+        <span><b>Kondisi menjadi Rusak berat</b> dan kendaraan masih dipegang {{ k.pemegang_nama }}. Tarik ke pengurus barang lewat pengembalian aset.</span>
+        <span class="actions"><button class="small primary" @click="dialog = 'kembali'">Pengembalian Aset</button>
           <button class="small" @click="next = null">Nanti saja</button></span>
       </div>
 
       <div class="tabs" role="tablist" aria-label="Bagian detail kendaraan">
         <button v-for="[key, text] in TABS" :key="key" role="tab" :aria-selected="tab === key" :class="{ active: tab === key }" @click="select(key)">
-          {{ text }}<template v-if="key === 'perawatan'"> ({{ perawatan.rows.length }})</template><template v-if="key === 'pemegang'"> ({{ k.riwayat_pemakaian.length }})</template></button>
+          {{ text }}<template v-if="key === 'perawatan'"> ({{ perawatan.rows.length }})</template><template v-if="key === 'pemegang'"> ({{ k.riwayat_pemakaian.length }})</template><template v-if="key === 'siklus'"> ({{ siklus.pengajuan.length }})</template></button>
       </div>
 
       <div v-if="tab === 'ringkasan'" class="grid two">
@@ -149,6 +161,7 @@ export const KdoDetail = {
           <dt>No. rangka</dt><dd class="code">{{ k.nomor_rangka || '-' }}</dd>
           <dt>No. mesin</dt><dd class="code">{{ k.nomor_mesin || '-' }}</dd>
           <dt>No. BPKB</dt><dd class="code">{{ k.nomor_bpkb || '-' }}</dd>
+          <dt>No. STNK</dt><dd class="code">{{ k.nomor_stnk || '-' }}</dd>
           <dt>Masa berlaku STNK</dt><dd><Badge :tone="jatuhTempo(k.masa_berlaku_stnk).tone">{{ jatuhTempo(k.masa_berlaku_stnk).text }}</Badge></dd>
           <dt>Jatuh tempo pajak</dt><dd><Badge :tone="jatuhTempo(k.tanggal_pajak).tone">{{ jatuhTempo(k.tanggal_pajak).text }}</Badge></dd>
         </dl></div>
@@ -160,6 +173,8 @@ export const KdoDetail = {
         </dl></div>
         <div class="card"><h2>Penempatan</h2><dl class="kv">
           <dt>Perangkat daerah</dt><dd><a :href="'#/perangkat-daerah/' + k.perangkat_daerah_id">{{ k.perangkat_daerah }}</a></dd>
+          <dt>Lokasi</dt><dd>{{ k.lokasi || '-' }}</dd>
+          <dt>Status aset</dt><dd><Badge :tone="tone('status_aset', k.status_aset)">{{ label('status_aset', k.status_aset) }}</Badge></dd>
           <dt>Pemegang</dt><dd>
             <template v-if="k.pemegang_pns_id">{{ k.pemegang_nama }}<span class="sub">{{ k.pemegang_jabatan }}</span></template>
             <Badge v-else tone="warn">Belum ada pemegang</Badge></dd>
@@ -175,8 +190,8 @@ export const KdoDetail = {
       <template v-if="tab === 'pemegang'">
         <div class="card"><div class="card-head"><h2>Pemegang Saat Ini</h2>
           <span v-if="isAdmin && k.is_aktif" class="actions">
-            <button v-if="k.pemakaian_aktif" class="small" @click="dialog = 'tutup'">Tutup Penugasan</button>
-            <button v-else class="small primary" @click="dialog = 'tautkan'">Tautkan Pemegang</button></span></div>
+            <button v-if="k.pemakaian_aktif" class="small" @click="dialog = 'kembali'">Pengembalian Aset</button>
+            <button v-else-if="k.status_aset === 'siaga'" class="small primary" @click="dialog = { ajukan: 'penugasan' }">Ajukan Penugasan</button></span></div>
           <dl class="kv">
             <dt>Pegawai</dt><dd>
               <template v-if="k.pemegang_pns_id"><a :href="'#/pns/' + k.pemegang_pns_id">{{ k.pemegang_nama }}</a><span class="sub">{{ k.pemegang_jabatan }}</span><span class="sub code">{{ k.pemegang_nip }}</span></template>
@@ -194,6 +209,29 @@ export const KdoDetail = {
               <td data-label="Keterangan">{{ r.keterangan || '-' }}</td></tr></tbody>
           </table></div>
           <EmptyState v-if="!k.riwayat_pemakaian.length" title="Belum ada riwayat penugasan" />
+        </div>
+      </template>
+
+      <template v-if="tab === 'siklus'">
+        <div class="card"><h2>Pengajuan</h2>
+          <div class="table-wrap"><table class="stack">
+            <thead><tr><th>Nomor</th><th>Jenis</th><th>Diajukan</th><th>Status</th></tr></thead>
+            <tbody><tr v-for="p in siklus.pengajuan" :key="p.id">
+              <td data-label="Nomor"><a :href="'#/pengajuan/' + p.id" class="code">{{ p.nomor }}</a><span class="sub">{{ p.alasan }}</span></td>
+              <td data-label="Jenis">{{ label('jenis_pengajuan', p.jenis) }}</td><td data-label="Diajukan">{{ tanggal(p.diajukan_pada) }}</td>
+              <td data-label="Status"><Badge :tone="tone('status_pengajuan', p.status)">{{ label('status_pengajuan', p.status) }}</Badge></td></tr></tbody>
+          </table></div>
+          <EmptyState v-if="!siklus.pengajuan.length" title="Belum ada pengajuan untuk kendaraan ini" />
+        </div>
+        <div class="card"><h2>Berita Acara</h2>
+          <div class="table-wrap"><table class="stack">
+            <thead><tr><th>Nomor</th><th>Jenis</th><th>Tanggal</th><th>Pihak pertama</th><th>Pihak kedua</th></tr></thead>
+            <tbody><tr v-for="b in siklus.beritaAcara" :key="b.id">
+              <td data-label="Nomor"><a :href="'#/berita-acara/' + b.id" class="code">{{ b.nomor }}</a></td>
+              <td data-label="Jenis">{{ label('jenis_berita_acara', b.jenis) }}</td><td data-label="Tanggal">{{ tanggal(b.tanggal) }}</td>
+              <td data-label="Pihak pertama">{{ b.pihak_pertama }}</td><td data-label="Pihak kedua">{{ b.pihak_kedua }}</td></tr></tbody>
+          </table></div>
+          <EmptyState v-if="!siklus.beritaAcara.length" title="Belum ada berita acara" />
         </div>
       </template>
 
@@ -231,8 +269,8 @@ export const KdoDetail = {
         Hapus catatan {{ label('jenis_perawatan', dialog.hapusPerawatan.jenis_perawatan) }} tanggal <b>{{ tanggal(dialog.hapusPerawatan.tanggal_servis) }}</b>
         sebesar {{ rupiah(dialog.hapusPerawatan.biaya) }}?
       </ConfirmDialog>
-      <TautkanDialog v-if="dialog === 'tautkan'" :kdo="k" @close="dialog = null" @saved="afterPemegang" />
-      <TutupPemakaianDialog v-if="dialog === 'tutup'" :pemakaian="{ ...k.pemakaian_aktif, nomor_polisi: k.nomor_polisi }" @close="dialog = null" @saved="afterPemegang" />
+      <AjukanDialog v-if="dialog?.ajukan" :jenis="dialog.ajukan" :kdo="k" @close="dialog = null" @saved="afterAjukan" />
+      <PengembalianDialog v-if="dialog === 'kembali'" :kdo="k" @close="dialog = null" @saved="afterKembali" />
       <PerawatanDialog v-if="dialog?.perawatan" :kdo="k" :record="dialog.perawatan" @close="dialog = null" @saved="afterPerawatan" />
     </template>
   </div>`,
@@ -247,7 +285,8 @@ export const KdoForm = {
     const original = ref(null);
     const form = useForm(schemas.kdo, {
       nomor_polisi: '', merek: '', tipe: '', tahun_produksi: new Date().getFullYear(), warna: '', kondisi: 'baik',
-      jenis_kendaraan: 'roda_4', peruntukan: null, nomor_rangka: '', nomor_mesin: '', isi_silinder_cc: null, bahan_bakar: null, nomor_bpkb: '',
+      jenis_kendaraan: route.query.jenis_kendaraan || 'roda_4', peruntukan: null, nomor_stnk: '', lokasi: '', status_aset: null,
+      pengajuan_id: route.query.pengajuan ? Number(route.query.pengajuan) : null, nomor_rangka: '', nomor_mesin: '', isi_silinder_cc: null, bahan_bakar: null, nomor_bpkb: '',
       masa_berlaku_stnk: null, tanggal_pajak: null, tanggal_perolehan: null, nilai_perolehan: null, kode_barang_aset: '',
       perangkat_daerah_id: route.query.perangkat_daerah_id ? Number(route.query.perangkat_daerah_id) : null,
       pemegang_pns_id: null, keterangan: '', is_aktif: 1,
@@ -271,12 +310,24 @@ export const KdoForm = {
       // Kendaraan baru tanpa pemegang langsung diarahkan ke langkah penugasan.
       if (res) navigate(id || res.data.pemegang_pns_id ? `/kdo/${res.data.id}` : `/kdo/${res.data.id}?tab=pemegang&baru=1`);
     }
-    return { id, units, pegawai, original, pemegangLocked, loaded, ...form, save, today };
+    const pengajuanNomor = ref('');
+    onMounted(async () => {
+      if (!form.values.pengajuan_id) return;
+      try {
+        const pg = (await api.get(`/pengajuan/${form.values.pengajuan_id}`)).data;
+        pengajuanNomor.value = pg.nomor;
+        form.values.perangkat_daerah_id ??= pg.perangkat_daerah_id;
+        form.values.nilai_perolehan ??= pg.detail.nilai_po ? Math.round(pg.detail.nilai_po / (pg.detail.jumlah || 1)) : null;
+        form.values.tanggal_perolehan ??= pg.detail.tanggal_terima ?? null;
+      } catch (e) { form.state.message = e.message; }
+    });
+    return { id, units, pegawai, original, pemegangLocked, loaded, pengajuanNomor, ...form, save, today };
   },
   template: `<div v-if="!loaded"><div v-if="state.message" class="alert error" role="alert">{{ state.message }}</div><LoadingState v-else /></div>
   <form v-else @submit.prevent="save" novalidate>
     <PageHeader :title="id ? 'Ubah Kendaraan Dinas' : 'Tambah Kendaraan Dinas'" :subtitle="original ? original.nomor_polisi : ''" :back="id ? '#/kdo/' + id : '#/kdo'" />
     <div v-if="state.message" class="alert error" role="alert">{{ state.message }}</div>
+    <div v-if="values.pengajuan_id" class="alert info">Registrasi aset dari pengajuan pengadaan <b>{{ pengajuanNomor }}</b>. Unit dan nilai perolehan diisi dari PO; lengkapi identitasnya.</div>
 
     <div class="card"><h2>Identitas</h2><div class="form">
       <Field label="Nomor polisi" name="nomor_polisi" :error="errors.nomor_polisi" required hint="Contoh: B 1234 ABC"><input id="nomor_polisi" v-model="values.nomor_polisi" maxlength="15" autocomplete="off"></Field>
@@ -295,6 +346,7 @@ export const KdoForm = {
       <Field label="Nomor rangka" name="nomor_rangka" :error="errors.nomor_rangka" required><input id="nomor_rangka" v-model="values.nomor_rangka" maxlength="30"></Field>
       <Field label="Nomor mesin" name="nomor_mesin" :error="errors.nomor_mesin"><input id="nomor_mesin" v-model="values.nomor_mesin" maxlength="30"></Field>
       <Field label="Nomor BPKB" name="nomor_bpkb" :error="errors.nomor_bpkb"><input id="nomor_bpkb" v-model="values.nomor_bpkb" maxlength="30"></Field>
+      <Field label="Nomor STNK" name="nomor_stnk" :error="errors.nomor_stnk"><input id="nomor_stnk" v-model="values.nomor_stnk" maxlength="30"></Field>
       <Field label="Masa berlaku STNK" name="masa_berlaku_stnk" :error="errors.masa_berlaku_stnk"><input id="masa_berlaku_stnk" type="date" v-model="values.masa_berlaku_stnk"></Field>
       <Field label="Jatuh tempo pajak" name="tanggal_pajak" :error="errors.tanggal_pajak"><input id="tanggal_pajak" type="date" v-model="values.tanggal_pajak"></Field>
     </div></div>
@@ -309,8 +361,11 @@ export const KdoForm = {
       <Field label="Perangkat daerah" name="perangkat_daerah_id" :error="errors.perangkat_daerah_id" required>
         <select id="perangkat_daerah_id" v-model.number="values.perangkat_daerah_id"><option :value="null">Pilih perangkat daerah</option>
           <option v-for="u in units" :key="u.id" :value="u.id" :disabled="!u.is_aktif && u.id !== values.perangkat_daerah_id">{{ u.nama_dinas }}{{ u.is_aktif ? '' : ' (nonaktif)' }}</option></select></Field>
-      <Field label="Pemegang" name="pemegang_pns_id" :error="errors.pemegang_pns_id"
-        :hint="pemegangLocked ? 'Sedang dipakai. Ganti pemegang lewat tab Penugasan di halaman detail' : 'Opsional. Hanya PNS aktif; akan tercatat sebagai pemakaian mulai hari ini'">
+      <Field label="Lokasi" name="lokasi" :error="errors.lokasi" hint="Pool atau kantor tempat kendaraan disimpan"><input id="lokasi" v-model="values.lokasi" maxlength="150"></Field>
+      <Field label="Status aset" name="status_aset" :error="errors.status_aset" :hint="id ? 'Aktif dan Siaga mengikuti penugasan; Dihapuskan hanya lewat disposal' : 'Kosongkan: Siaga bila tanpa pemegang, Aktif bila ada'">
+        <EnumSelect id="status_aset" v-model="values.status_aset" group="status_aset" placeholder="Otomatis" /></Field>
+      <Field v-if="!values.pengajuan_id" label="Pemegang (pendataan awal)" name="pemegang_pns_id" :error="errors.pemegang_pns_id"
+        :hint="pemegangLocked ? 'Sedang dipegang. Ganti pemegang lewat Pengembalian Aset lalu pengajuan penugasan' : 'Hanya untuk aset lama yang sudah dipegang. Penugasan baru lewat pengajuan (perlu persetujuan)'">
         <select id="pemegang_pns_id" v-model.number="values.pemegang_pns_id" :disabled="pemegangLocked"><option :value="null">Tanpa pemegang</option>
           <option v-if="original?.pemegang_pns_id && !pegawai.some(p => p.id === original.pemegang_pns_id)" :value="original.pemegang_pns_id">{{ original.pemegang_nama }}</option>
           <option v-for="p in pegawai" :key="p.id" :value="p.id">{{ p.nama_pegawai }} ({{ p.perangkat_daerah_singkatan || p.perangkat_daerah }})</option></select></Field>

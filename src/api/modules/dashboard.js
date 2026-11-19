@@ -36,6 +36,12 @@ export function register(app, { db }) {
       FROM kdo k JOIN pns p ON p.id = k.pemegang_pns_id
       WHERE k.is_aktif = 1 AND k.kondisi = 'rusak_berat' ORDER BY k.nomor_polisi`).all();
 
+    const statusAset = Object.fromEntries(db.prepare('SELECT status_aset, COUNT(*) AS n FROM kdo GROUP BY status_aset').all().map((r) => [r.status_aset, r.n]));
+    // Antrean siklus aset: Approver melihat yang menunggu keputusan, Pengelola Aset yang siap diproses.
+    const antrean = db.prepare(`SELECT pg.id, pg.nomor, pg.jenis, pg.status, pg.alasan, pg.diajukan_pada, k.nomor_polisi
+      FROM pengajuan pg LEFT JOIN kdo k ON k.id = pg.kdo_id
+      WHERE pg.status IN ('diajukan', 'disetujui', 'dipesan', 'diterima') ORDER BY pg.diajukan_pada`).all();
+
     const asetTerbaru = db.prepare(`
       SELECT k.id, k.nomor_polisi, k.merek, k.tipe, k.kondisi, k.created_at, pd.singkatan AS perangkat_daerah_singkatan
       FROM kdo k JOIN perangkat_daerah pd ON pd.id = k.perangkat_daerah_id
@@ -57,6 +63,11 @@ export function register(app, { db }) {
       total_nonaktif: db.prepare('SELECT COUNT(*) AS n FROM kdo WHERE is_aktif = 0').get().n,
       kondisi: perKondisi,
       pemegang,
+      status_aset: statusAset,
+      pengajuan: {
+        menunggu_persetujuan: antrean.filter((p) => p.status === 'diajukan'),
+        siap_diproses: antrean.filter((p) => p.status !== 'diajukan'),
+      },
       sedang_dipakai: sedangDipakai,
       aset_terbaru: asetTerbaru,
       pengingat: {

@@ -15,10 +15,10 @@ test('dashboard: jumlah kategori kondisi = total aset; sedang dipakai & aset ter
   const d = (await api('GET', '/dashboard', { token })).body.data;
   assert.equal(d.total_aset, 20);
   assert.equal(d.kondisi.baik + d.kondisi.rusak_ringan + d.kondisi.rusak_berat, d.total_aset);
-  assert.equal(d.sedang_dipakai.length, 20);
+  assert.equal(d.sedang_dipakai.length, 18);
   assert.equal(d.pemegang.ada + d.pemegang.tanpa, d.total_aset);
-  // BR-21: dua kendaraan rusak berat di data uji masih dipegang, jadi masuk "Perlu perhatian".
-  assert.equal(d.pengingat.rusak_berat_dipegang.length, d.kondisi.rusak_berat);
+  // BR-21: B 9433 PQS rusak berat dan masih dipegang (B 3920 PQJ sudah dikembalikan), jadi masuk "Perlu perhatian".
+  assert.deepEqual(d.pengingat.rusak_berat_dipegang.map((k) => k.nomor_polisi), ['B 9433 PQS']);
   assert.equal(d.aset_terbaru.length, 5);
   assert.deepEqual(d.pengingat.servis, []);
 });
@@ -45,9 +45,7 @@ test('tautkan pemakai: ditolak 409 bila masih ada pemakaian aktif, lalu tutup â†
 });
 
 test('tautkan pemakai: PNS non-aktif ditolak 422', async () => {
-  const k = await kdoId('B 3871 PQD');
-  const aktif = (await api('GET', `/pemakaian?kdo_id=${k}&status=aktif`, { token })).body.data[0];
-  await api('POST', `/pemakaian/${aktif.id}/selesai`, { token, body: { tanggal_selesai: today() } });
+  const k = await kdoId('B 3871 PQD'); // siaga di data uji
   const pensiun = await api('POST', '/pns', { token, body: { nip: '196205101985031005', nama_pegawai: 'Pegawai Pensiun', jabatan: 'Staf', perangkat_daerah_id: 1, status_kepegawaian: 'pensiun' } });
   const r = await api('POST', '/pemakaian', { token, body: { kdo_id: k, pns_id: pensiun.body.data.id, tanggal_mulai: today() } });
   assert.equal(r.status, 422);
