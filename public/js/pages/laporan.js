@@ -13,7 +13,7 @@ const periode = (p) => (p?.dari || p?.sampai ? `${p.dari ? tanggal(p.dari) : 'aw
 /** Definisi tiap jenis laporan: endpoint, filter, dan cara menyusun kolom/baris/ringkasan. */
 const REPORTS = {
   kendaraan: {
-    title: 'Laporan Daftar Kendaraan Dinas',
+    title: 'Laporan Daftar Kendaraan Dinas (BPAD)',
     endpoint: '/laporan/kendaraan',
     filters: { perangkat_daerah_id: '', kondisi: '', jenis_kendaraan: '', peruntukan: '' },
     build: (rows, meta) => ({
